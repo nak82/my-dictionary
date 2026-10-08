@@ -1,0 +1,234 @@
+/* ==========================================
+   1. ОСНОВНЫЕ СТИЛИ И СБРОС (GLOBAL)
+   ========================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background-color: #f4f6f9; color: #333; padding: 20px; max-width: 1000px; margin: 0 auto; }
+h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+
+/* ==========================================
+   2. ВКЛАДКИ И НАВИГАЦИЯ
+   ========================================== */
+.nav-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: #e2e8f0; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; color: #475569; transition: 0.2s; }
+.tab-btn.active { background: #10b981; color: white; }
+
+.btn-toggle-form { width: 100%; padding: 12px; background: #0f766e; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; text-align: left; transition: 0.2s; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+.btn-toggle-form:hover { background: #115e59; }
+
+/* ==========================================
+   3. МОДАЛЬНОЕ ОКНО
+   ========================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 15px;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* ==========================================
+   4. ФОРМЫ И ВВОД ДАННЫХ
+   ========================================== */
+.card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+.form-group { margin-bottom: 12px; }
+label { display: block; margin-bottom: 4px; font-weight: 600; color: #555; font-size: 14px; }
+input[type="text"], input[type="number"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; }
+
+#extraTranslations { height: 70px; resize: vertical; }
+#contextInput { height: 80px; resize: vertical; }
+
+.row { display: flex; gap: 10px; }
+.row .form-group { flex: 1; }
+.status { font-size: 12px; color: #888; margin-top: 4px; display: block; }
+
+.btn-ai { background: #8e44ad; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-ai:hover { background: #732d91; }
+
+.btn-refresh-word { background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-refresh-word:hover { background: #0369a1; }
+
+.duplicate-box { background: #fff3cd; border: 1px solid #ffe69c; color: #664d03; padding: 10px 14px; border-radius: 8px; margin-top: 8px; font-size: 13px; }
+.duplicate-actions { display: flex; gap: 8px; margin-top: 8px; }
+.btn-dup { padding: 5px 10px; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; }
+.btn-dup-replace { background: #ffc107; color: #000; }
+.btn-dup-add { background: #0dcaf0; color: #000; }
+
+/* ==========================================
+   5. ВАРИАНТЫ ПЕРЕВОДА
+   ========================================== */
+.suggestions-box { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; align-items: center; }
+.sug-chip { background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #cbd5e1; transition: 0.2s; }
+.sug-chip:hover { background: #22c55e; color: white; border-color: #16a34a; }
+.sug-chip-extra { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.sug-chip-extra:hover { background: #f59e0b; color: white; }
+.sug-btn-all { background: #0284c7; color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; font-weight: bold; transition: 0.2s; }
+.sug-btn-all:hover { background: #0369a1; }
+
+/* ==========================================
+   6. СТРУКТУРА 5 КАТЕГОРИЙ ТЕГОВ
+   ========================================== */
+.categories-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.cat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+.cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.cat-title { font-weight: bold; font-size: 13px; color: #334155; display: flex; align-items: center; gap: 6px; }
+.btn-edit-cat { background: none; border: none; cursor: pointer; font-size: 12px; color: #0284c7; }
+
+.tags-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tag-chip { background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; border: 1px solid #cbd5e1; user-select: none; transition: 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+.tag-chip.selected { background: #10b981; color: white; border-color: #059669; }
+.tag-del-btn { background: none; border: none; color: #ef4444; font-weight: bold; margin-left: 2px; cursor: pointer; }
+
+.add-tag-inline { display: flex; gap: 4px; margin-top: 6px; }
+.add-tag-inline input { padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+.add-tag-inline button { padding: 4px 8px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
+
+/* ==========================================
+   7. ПАНЕЛЬ ВИДИМОСТИ КОЛОНОК
+   ========================================== */
+.column-visibility-bar { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 13px; color: #475569; }
+.column-visibility-bar label { font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 0; }
+
+/* ==========================================
+   8. ТАБЛИЦА EXCEL VIEW
+   ========================================== */
+.table-container { overflow-x: auto; padding: 0; }
+.dict-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.dict-table th { background: #f1f5f9; color: #334155; padding: 12px; border-bottom: 2px solid #cbd5e1; font-weight: bold; user-select: none; }
+.th-sortable { cursor: pointer; transition: background 0.2s; }
+.th-sortable:hover { background: #e2e8f0; }
+.sort-icon { font-size: 11px; color: #94a3b8; margin-left: 4px; }
+
+.dict-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+.dict-table tr:hover { background: #f8fafc; }
+
+.cell-scrollable {
+    max-height: 4.5em;
+    line-height: 1.5em;
+    overflow-y: auto;
+    word-break: break-word;
+}
+
+.cell-scrollable::-webkit-scrollbar { width: 4px; }
+.cell-scrollable::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.cell-hidden-text { color: transparent !important; background: #e2e8f0; border-radius: 4px; padding: 2px 6px; cursor: pointer; user-select: none; transition: 0.2s; display: inline-block; }
+.cell-hidden-text * { opacity: 0; transition: opacity 0.2s; }
+.cell-hidden-text:hover, .cell-hidden-text.revealed { color: #333 !important; background: transparent; }
+.cell-hidden-text:hover *, .cell-hidden-text.revealed * { opacity: 1; }
+
+.btn-main { background-color: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; transition: 0.2s; font-weight: bold; }
+.btn-main:hover { background-color: #059669; }
+.btn-cancel { background-color: #95a5a6; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; font-weight: bold; display: none; }
+.actions { display: flex; gap: 4px; }
+.btn-action { width: auto; padding: 4px 8px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; color: white; font-weight: 600; }
+.btn-edit { background: #f39c12; }
+.btn-delete { background: #e74c3c; }
+.btn-audio { background: none; border: none; cursor: pointer; font-size: 16px; }
+
+.tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.tag { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+
+.bulk-panel { background: #eef2ff; border: 1px solid #c7d2fe; padding: 12px; }
+.bulk-header { display: flex; align-items: center; justify-content: space-between; }
+.bulk-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bulk-actions select { padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; }
+.word-checkbox { width: 16px; height: 16px; cursor: pointer; }
+
+/* ==========================================
+   9. ИГРЫ И ТРЕНИРОВКИ
+   ========================================== */
+.game-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.game-mode-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.game-mode-card:hover {
+    border-color: #10b981;
+    background: #ecfdf5;
+    transform: translateY(-2px);
+}
+
+.mode-icon { font-size: 32px; margin-bottom: 6px; }
+.mode-title { font-weight: bold; font-size: 16px; color: #2c3e50; }
+.mode-desc { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+.game-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.game-progress-fill {
+    height: 100%;
+    background: #10b981;
+    transition: width 0.3s ease;
+}
+
+.matching-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.matching-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.matching-btn {
+    padding: 12px 8px;
+    border: 2px solid #cbd5e1;
+    background: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    word-break: break-word;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.matching-btn.selected { border-color: #10b981; background: #e0f2fe; }
+.matching-btn.correct { border-color: #10b981; background: #d1fae5; opacity: 0.25; cursor: default; }
+.matching-btn.wrong { border-color: #e74c3c; background: #fee2e2; }
+
+.trainer-card { background: white; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; user-select: none; transition: transform 0.2s; }
+.trainer-card:hover { transform: translateY(-2px); }
+.trainer-word { font-size: 28px; color: #2c3e50; font-weight: bold; margin-bottom: 8px; }
+.trainer-hint { color: #94a3b8; font-size: 13px; margin-top: 15px; }
+.trainer-controls { display: flex; gap: 10px; margin-top: 15px; }
+.btn-know { background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
+.btn-dontknow { background: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
