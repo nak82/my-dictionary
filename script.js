@@ -3,13 +3,13 @@
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyD0-Rjbm8_eMx9wWaDu2NJQA1M_WX06Hnw",
-  authDomain: "my-dictionary-24f0b.firebaseapp.com",
-  databaseURL: "https://my-dictionary-24f0b-default-rtdb.firebaseio.com",
-  projectId: "my-dictionary-24f0b",
-  storageBucket: "my-dictionary-24f0b.firebasestorage.app",
-  messagingSenderId: "233923444556",
-  appId: "1:233923444556:web:b2497d99e5e375b26f59e9",
-  measurementId: "G-10GY4QSFX3"
+    authDomain: "my-dictionary-24f0b.firebaseapp.com",
+    databaseURL: "https://my-dictionary-24f0b-default-rtdb.firebaseio.com",
+    projectId: "my-dictionary-24f0b",
+    storageBucket: "my-dictionary-24f0b.firebasestorage.app",
+    messagingSenderId: "233923444556",
+    appId: "1:233923444556:web:b2497d99e5e375b26f59e9",
+    measurementId: "G-10GY4QSFX3"
 };
 
 firebase.initializeApp(firebaseConfig);
