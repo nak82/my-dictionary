@@ -224,7 +224,21 @@
         
         <!-- Настройки перед игрой -->
         <div class="card" id="gameSetupCard">
-            <h2 style="margin-bottom: 15px; color: #2c3e50;">⚙️ Настройка тренировки</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0; color: #2c3e50;">⚙️ Настройка тренировки</h2>
+                <button type="button" class="btn-action" style="background:#0284c7; padding: 8px 12px;" onclick="toggleGameHistory()">📊 История тренировок</button>
+            </div>
+
+            <!-- ИСТОРИЯ ТРЕНИРОВОК -->
+            <div id="gameHistoryBox" class="card" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: #1e293b;">📜 История результатов:</strong>
+                    <button type="button" class="btn-action btn-delete" onclick="clearGameHistory()">🗑️ Очистить историю</button>
+                </div>
+                <div id="gameHistoryList" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
+                    <em style="color:#888;">История пока пуста</em>
+                </div>
+            </div>
             
             <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
                 <div style="flex: 1; min-width: 200px;">
@@ -275,6 +289,22 @@
                 </div>
             </div>
         </div>
+
+        <!-- Игровой контейнер -->
+        <div id="gamePlayArea" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <button type="button" class="btn-cancel" style="display: inline-block; width: auto; padding: 6px 14px; background: #64748b;" onclick="exitGame()">← К настройкам</button>
+                <div id="gameProgressText" style="font-weight: bold; color: #475569;">1 / 10</div>
+            </div>
+
+            <div class="game-progress-bar">
+                <div class="game-progress-fill" id="gameProgressFill" style="width: 0%;"></div>
+            </div>
+
+            <div id="activeGameContainer"></div>
+        </div>
+
+    </div>
 
         <!-- Игровой контейнер -->
         <div id="gamePlayArea" style="display: none;">
