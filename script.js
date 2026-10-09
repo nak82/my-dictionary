@@ -1070,12 +1070,59 @@ function renderWords() {
 }
 
 // ==========================================
-// 10. ИГРОВОЙ ДВИЖОК
+// 10. ИГРОВОЙ ДВИЖОК И СТАТИСТИКА
 // ==========================================
 let activeGame = {
     mode: '', words: [], currentIndex: 0, direction: 'both',
-    errors: [], selectedLeft: null, selectedRight: null, matchedCount: 0
+    errors: [], correctWords: [], tagFilter: '', selectedLeft: null, selectedRight: null, matchedCount: 0
 };
+
+let gameHistory = [];
+
+function attachUserListeners() {
+    if (!currentUser) return;
+
+    // Слушатель личного словаря
+    db.ref(`users_data/${currentUser}/dictionary`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            dictionary = Array.isArray(data) ? data : Object.values(data);
+            dictionary.sort((a, b) => b.id - a.id);
+        } else {
+            dictionary = [];
+        }
+        renderWords();
+        populateGameTagFilters();
+        renderSingleTagFilter();
+    });
+
+    // Слушатель личных категорий
+    db.ref(`users_data/${currentUser}/categories`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            categories = data;
+        } else {
+            categories = [
+                { id: 1, name: 'Уровень', tags: ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'] },
+                { id: 2, name: 'Часть речи', tags: ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction'] },
+                { id: 3, name: 'Тематика', tags: ['работа', 'путешествия', 'разговорное', 'it'] },
+                { id: 4, name: 'Статус', tags: ['учу', 'знаю', 'на повторении'] },
+                { id: 5, name: 'Категория 5', tags: ['new'] }
+            ];
+            db.ref(`users_data/${currentUser}/categories`).set(categories);
+        }
+        renderCategoriesUI();
+        renderSingleTagFilter();
+        renderBulkTagSelect();
+    });
+
+    // Слушатель истории игр
+    db.ref(`users_data/${currentUser}/game_history`).on('value', (snapshot) => {
+        const data = snapshot.val();
+        gameHistory = data ? Object.values(data) : [];
+        renderGameHistoryUI();
+    });
+}
 
 function populateGameTagFilters() {
     const select = document.getElementById('gameTagFilter');
@@ -1136,8 +1183,16 @@ function startGame(mode) {
     const selectedWords = pool.slice(0, Math.min(targetCount, pool.length));
 
     activeGame = {
-        mode, words: selectedWords, currentIndex: 0, direction,
-        errors: [], selectedLeft: null, selectedRight: null, matchedCount: 0
+        mode,
+        words: selectedWords,
+        currentIndex: 0,
+        direction,
+        errors: [],
+        correctWords: [],
+        tagFilter,
+        selectedLeft: null,
+        selectedRight: null,
+        matchedCount: 0
     };
 
     document.getElementById('gameSetupCard').style.display = 'none';
@@ -1175,6 +1230,9 @@ function renderGameStep() {
     }
 }
 
+// ------------------------------------------
+// ФЛЕШ-КАРТОЧКИ
+// ------------------------------------------
 let isCardFlipped = false;
 
 function renderFlashcardsMode() {
@@ -1210,8 +1268,12 @@ function flipGameCard() {
 }
 
 function nextGameCard(known) {
-    if (!known) {
-        const currentItem = activeGame.words[activeGame.currentIndex];
+    const currentItem = activeGame.words[activeGame.currentIndex];
+    if (known) {
+        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) {
+            activeGame.correctWords.push(currentItem);
+        }
+    } else {
         if (!activeGame.errors.some(w => w.id === currentItem.id)) {
             activeGame.errors.push(currentItem);
         }
@@ -1220,6 +1282,9 @@ function nextGameCard(known) {
     renderGameStep();
 }
 
+// ------------------------------------------
+// ПИСЬМЕННЫЙ ПЕРЕВОД
+// ------------------------------------------
 function renderWrittenMode() {
     const container = document.getElementById('activeGameContainer');
     const item = activeGame.words[activeGame.currentIndex];
@@ -1263,11 +1328,17 @@ function checkWrittenGameAnswer(correctText, wordId) {
 
     if (!userVal) return;
 
+    const currentItem = activeGame.words[activeGame.currentIndex];
+
     if (userVal === correctVal) {
         feedback.style.background = '#d1fae5';
         feedback.style.color = '#065f46';
         feedback.innerText = '✨ Отлично! Правильно!';
         feedback.style.display = 'block';
+
+        if (!activeGame.correctWords.some(w => w.id === wordId)) {
+            activeGame.correctWords.push(currentItem);
+        }
     } else {
         feedback.style.background = '#fee2e2';
         feedback.style.color = '#991b1b';
@@ -1275,8 +1346,7 @@ function checkWrittenGameAnswer(correctText, wordId) {
         feedback.style.display = 'block';
 
         if (!activeGame.errors.some(w => w.id === wordId)) {
-            const errItem = dictionary.find(w => w.id === wordId);
-            if (errItem) activeGame.errors.push(errItem);
+            activeGame.errors.push(currentItem);
         }
     }
 
@@ -1286,6 +1356,9 @@ function checkWrittenGameAnswer(correctText, wordId) {
     }, 1200);
 }
 
+// ------------------------------------------
+// СОПОСТАВЛЕНИЕ ПАР
+// ------------------------------------------
 function renderMatchingMode() {
     const container = document.getElementById('activeGameContainer');
     const words = activeGame.words;
@@ -1326,8 +1399,10 @@ function handleMatchingGameClick(btn) {
     }
 
     if (activeGame.selectedLeft && activeGame.selectedRight) {
-        const idLeft = activeGame.selectedLeft.getAttribute('data-id');
-        const idRight = activeGame.selectedRight.getAttribute('data-id');
+        const idLeft = parseInt(activeGame.selectedLeft.getAttribute('data-id'));
+        const idRight = parseInt(activeGame.selectedRight.getAttribute('data-id'));
+
+        const wordObj = activeGame.words.find(w => w.id === idLeft);
 
         if (idLeft === idRight) {
             activeGame.selectedLeft.className = 'matching-btn correct';
@@ -1335,6 +1410,12 @@ function handleMatchingGameClick(btn) {
             activeGame.selectedLeft = null;
             activeGame.selectedRight = null;
             activeGame.matchedCount++;
+
+            if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
+                if (!activeGame.correctWords.some(w => w.id === idLeft)) {
+                    activeGame.correctWords.push(wordObj);
+                }
+            }
 
             if (activeGame.matchedCount === activeGame.words.length) {
                 setTimeout(showGameSummary, 400);
@@ -1345,6 +1426,10 @@ function handleMatchingGameClick(btn) {
 
             btn1.classList.add('wrong');
             btn2.classList.add('wrong');
+
+            if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
+                activeGame.errors.push(wordObj);
+            }
 
             if (navigator.vibrate) navigator.vibrate(200);
 
@@ -1359,35 +1444,143 @@ function handleMatchingGameClick(btn) {
     }
 }
 
+// ------------------------------------------
+// ИТОГИ И СОХРАНЕНИЕ СТАИСТИКИ
+// ------------------------------------------
 function showGameSummary() {
     const container = document.getElementById('activeGameContainer');
     document.getElementById('gameProgressFill').style.width = '100%';
     document.getElementById('gameProgressText').innerText = 'Завершено!';
 
-    const hasErrors = activeGame.errors.length > 0;
+    const total = activeGame.words.length;
+    const errorsCount = activeGame.errors.length;
+    const correctCount = total - errorsCount;
+    const percentage = Math.round((correctCount / total) * 100);
+
+    // Сохранение записи в историю в Firebase
+    saveGameHistoryEntry({
+        date: new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        mode: getModeTitle(activeGame.mode),
+        tag: activeGame.tagFilter,
+        total,
+        correctCount,
+        errorsCount,
+        percentage
+    });
 
     let html = `
-        <div class="card" style="text-align: center; padding: 30px;">
-            <h2 style="color: #2c3e50;">🎉 Тренировка окончена!</h2>
-            <p style="margin: 15px 0; font-size: 16px;">Пройдено слов: <strong>${activeGame.words.length}</strong></p>
+        <div class="card" style="padding: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #2c3e50; margin-bottom: 6px;">🎉 Тренировка окончена!</h2>
+                <div style="font-size: 32px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : '#f59e0b'};">
+                    Результат: ${percentage}%
+                </div>
+                <p style="color: #64748b; font-size: 14px; margin-top: 4px;">
+                    Всего слов: <strong>${total}</strong> | Угадано: <strong style="color:#10b981;">${correctCount}</strong> | Ошибок: <strong style="color:#ef4444;">${errorsCount}</strong>
+                </p>
+            </div>
     `;
 
-    if (hasErrors) {
-        html += `
-            <div style="background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 20px;">
-                Слов с ошибками: ${activeGame.errors.length}. Повторите их на следующей тренировке.
-            </div>
-        `;
-    } else {
-        html += `
-            <div style="background: #d1fae5; color: #065f46; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 20px;">
-                🌟 Отличный результат! 100% правильных ответов!
-            </div>
-        `;
+    // Блок слов с ошибками
+    if (activeGame.errors.length > 0) {
+        html += `<div style="margin-bottom: 20px;">
+            <h4 style="color: #ef4444; margin-bottom: 8px;">❌ Ошибки / Неугаданные слова (${activeGame.errors.length}):</h4>
+            <div style="display: flex; flex-direction: column; gap: 6px;">`;
+
+        activeGame.errors.forEach(item => {
+            const currentTags = item.tags ? item.tags.map(t => `#${t}`).join(' ') : 'нет тегов';
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #fee2e2; border: 1px solid #fca5a5; padding: 8px 12px; border-radius: 8px; font-size: 13px;">
+                    <div>
+                        <strong style="color: #991b1b;">${item.en}</strong> — ${item.mainRu || item.ru} 
+                        <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span>
+                    </div>
+                    <button type="button" class="btn-action" style="background:#0284c7; padding: 4px 8px; font-size: 11px;" onclick="quickEditWordTags(${item.id})">✏ теги</button>
+                </div>`;
+        });
+        html += `</div></div>`;
     }
 
-    html += `<button class="btn-main" style="max-width: 250px;" onclick="exitGame()">К настройкам</button></div>`;
+    // Блок правильных слов
+    if (activeGame.correctWords.length > 0) {
+        html += `<div>
+            <h4 style="color: #10b981; margin-bottom: 8px;">✅ Правильные слова (${activeGame.correctWords.length}):</h4>
+            <div style="display: flex; flex-direction: column; gap: 6px;">`;
+
+        activeGame.correctWords.forEach(item => {
+            const currentTags = item.tags ? item.tags.map(t => `#${t}`).join(' ') : 'нет тегов';
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #d1fae5; border: 1px solid #6ee7b7; padding: 8px 12px; border-radius: 8px; font-size: 13px;">
+                    <div>
+                        <strong style="color: #065f46;">${item.en}</strong> — ${item.mainRu || item.ru} 
+                        <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span>
+                    </div>
+                    <button type="button" class="btn-action" style="background:#0284c7; padding: 4px 8px; font-size: 11px;" onclick="quickEditWordTags(${item.id})">✏ теги</button>
+                </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    html += `
+        <div style="margin-top: 25px; text-align: center;">
+            <button class="btn-main" style="max-width: 250px;" onclick="exitGame()">К настройкам</button>
+        </div>
+    </div>`;
+
     container.innerHTML = html;
+}
+
+function getModeTitle(mode) {
+    if (mode === 'flashcards') return '🃏 Флеш-карточки';
+    if (mode === 'written') return '✍️ Письменный';
+    if (mode === 'matching') return '🧩 Пары';
+    return mode;
+}
+
+function saveGameHistoryEntry(entry) {
+    if (!currentUser) return;
+    const newHistory = [entry, ...gameHistory].slice(0, 30); // Храним последние 30 игр
+    db.ref(`users_data/${currentUser}/game_history`).set(newHistory);
+}
+
+function toggleGameHistory() {
+    const box = document.getElementById('gameHistoryBox');
+    if (!box) return;
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderGameHistoryUI() {
+    const container = document.getElementById('gameHistoryList');
+    if (!container) return;
+
+    if (gameHistory.length === 0) {
+        container.innerHTML = '<em style="color:#888;">История пока пуста</em>';
+        return;
+    }
+
+    let html = '';
+    gameHistory.forEach(item => {
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
+                <div>
+                    <strong>${item.mode}</strong> <small style="color:#64748b;">(${item.date})</small>
+                    <div style="font-size: 11px; color:#475569;">Тег: #${item.tag} | Слов: ${item.total}</div>
+                </div>
+                <div style="font-weight: bold; font-size: 14px; color: ${item.percentage >= 80 ? '#10b981' : '#f59e0b'};">
+                    ${item.percentage}% (${item.correctCount}/${item.total})
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function clearGameHistory() {
+    if (confirm('Очистить историю игр?')) {
+        if (currentUser) {
+            db.ref(`users_data/${currentUser}/game_history`).remove();
+        }
+    }
 }
 
 // ==========================================
