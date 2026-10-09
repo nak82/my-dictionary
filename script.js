@@ -1,7 +1,6 @@
 // ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ И ХРАНИЛИЩЕ ДАННЫХ
+// 1. ИНИЦИАЛИЗАЦИЯ И ХРАНИЛИЩЕ ДАННЫХ (FIREBASE)
 // ==========================================
-// 1. Вставьте ваши ключи из Firebase Console:
 const firebaseConfig = {
   apiKey: "AIzaSyD0-Rjbm8_eMx9wWaDu2NJQA1M_WX06Hnw",
   authDomain: "my-dictionary-24f0b.firebaseapp.com",
@@ -13,28 +12,47 @@ const firebaseConfig = {
   measurementId: "G-10GY4QSFX3"
 };
 
-// Инициализация Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Глобальные переменные
 let dictionary = [];
 let categories = [];
+let selectedFormTags = [];
+let selectedWordIds = [];
+let translateTimer = null;
+let currentVariants = [];
 
-// 2. Слушатель мгновенных обновлений из облака
+let duplicateMode = 'none';
+let existingDuplicateId = null;
+
+let activeSearchQuery = '';
+let activeTagFilter = '';
+let currentSortColumn = 'en';
+let currentSortDirection = 'asc';
+
+let columnVisibility = JSON.parse(localStorage.getItem('my_column_visibility')) || {
+    en: true, mainRu: true, extraRu: true, context: true, tags: true, actions: true
+};
+
+// Слушатель Firebase для словаря
 db.ref('dictionary').on('value', (snapshot) => {
     const data = snapshot.val();
-    dictionary = data ? Object.values(data) : [];
+    if (data) {
+        dictionary = Array.isArray(data) ? data : Object.values(data);
+        dictionary.sort((a, b) => b.id - a.id);
+    } else {
+        dictionary = [];
+    }
     renderWords();
     populateGameTagFilters();
 });
 
+// Слушатель Firebase для категорий
 db.ref('categories').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
         categories = data;
     } else {
-        // Дефолтные категории, если база пустая
         categories = [
             { id: 1, name: 'Уровень', tags: ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'] },
             { id: 2, name: 'Часть речи', tags: ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction'] },
@@ -49,9 +67,12 @@ db.ref('categories').on('value', (snapshot) => {
     renderBulkTagSelect();
 });
 
-// 3. Обновленные функции сохранения в облако вместо localStorage
 function saveAndRender() {
-    db.ref('dictionary').set(dictionary);
+    const dictObject = {};
+    dictionary.forEach(item => {
+        dictObject[item.id] = item;
+    });
+    db.ref('dictionary').set(dictObject);
 }
 
 function saveCategories() {
@@ -109,13 +130,6 @@ function getAllTags() {
         });
     });
     return all;
-}
-
-function saveCategories() {
-    localStorage.setItem('my_categories', JSON.stringify(categories));
-    renderCategoriesUI();
-    renderSingleTagFilter();
-    renderBulkTagSelect();
 }
 
 // ==========================================
@@ -242,7 +256,7 @@ function renderFormSelectedTags() {
 }
 
 // ==========================================
-// 4. ПРОВЕРКА ДУБЛИКАТОВ И АВТОПЕРЕВОД (ТАЙМЕР + КНОПКА)
+// 4. ПРОВЕРКА ДУБЛИКАТОВ И АВТОПЕРЕВОД
 // ==========================================
 function handleEnglishInput() {
     const word = document.getElementById('englishWord').value.trim().toLowerCase();
@@ -294,20 +308,13 @@ function cleanText(text) {
 }
 
 const posDictionary = {
-    'noun': 'noun',
-    'существительное': 'noun',
-    'verb': 'verb',
-    'глагол': 'verb',
-    'adjective': 'adjective',
-    'прилагательное': 'adjective',
-    'adverb': 'adverb',
-    'наречие': 'adverb',
-    'preposition': 'preposition',
-    'предлог': 'preposition',
-    'pronoun': 'pronoun',
-    'местоимение': 'pronoun',
-    'conjunction': 'conjunction',
-    'союз': 'conjunction'
+    'noun': 'noun', 'существительное': 'noun',
+    'verb': 'verb', 'глагол': 'verb',
+    'adjective': 'adjective', 'прилагательное': 'adjective',
+    'adverb': 'adverb', 'наречие': 'adverb',
+    'preposition': 'preposition', 'предлог': 'preposition',
+    'pronoun': 'pronoun', 'местоимение': 'pronoun',
+    'conjunction': 'conjunction', 'союз': 'conjunction'
 };
 
 function refreshWordData() {
@@ -512,12 +519,8 @@ async function processBulkWordsAdd() {
         const context = `1. I need to ${en} this right now. — Мне нужно ${mainRu || en} это прямо сейчас.`;
 
         dictionary.unshift({
-            id: Date.now() + Math.random(),
-            en,
-            mainRu,
-            extraRu,
-            context,
-            tags
+            id: Date.now() + i,
+            en, mainRu, extraRu, context, tags
         });
 
         addedCount++;
@@ -740,7 +743,7 @@ function applyBulkDelete() {
 }
 
 // ==========================================
-// 9. СОХРАНЕНИЕ И РЕНДЕР
+// 9. СОХРАНЕНИЕ И РЕДАКТИРОВАНИЕ СЛОВ
 // ==========================================
 function saveWord() {
     const idInput = document.getElementById('editWordId').value;
@@ -856,11 +859,6 @@ function deleteWord(id) {
     }
 }
 
-function saveAndRender() {
-    localStorage.setItem('my_dictionary', JSON.stringify(dictionary));
-    renderWords();
-}
-
 function getFilteredWords() {
     return dictionary.filter(item => {
         const matchEn = item.en.toLowerCase().includes(activeSearchQuery);
@@ -900,7 +898,6 @@ function renderTableHeaders() {
     }
 
     let html = `<th style="width: 30px;"></th>`;
-    
     html += `<th class="th-sortable" onclick="sortBy('en')">Слово (EN) ${getSortIcon('en')}</th>`;
     html += `<th class="th-sortable" onclick="sortBy('mainRu')">Основной перевод ${getSortIcon('mainRu')}</th>`;
 
@@ -1015,14 +1012,8 @@ function renderWords() {
 // 10. ИГРОВОЙ ДВИЖОК
 // ==========================================
 let activeGame = {
-    mode: '',
-    words: [],
-    currentIndex: 0,
-    direction: 'both',
-    errors: [],
-    selectedLeft: null,
-    selectedRight: null,
-    matchedCount: 0
+    mode: '', words: [], currentIndex: 0, direction: 'both',
+    errors: [], selectedLeft: null, selectedRight: null, matchedCount: 0
 };
 
 function populateGameTagFilters() {
@@ -1084,14 +1075,8 @@ function startGame(mode) {
     const selectedWords = pool.slice(0, Math.min(targetCount, pool.length));
 
     activeGame = {
-        mode,
-        words: selectedWords,
-        currentIndex: 0,
-        direction,
-        errors: [],
-        selectedLeft: null,
-        selectedRight: null,
-        matchedCount: 0
+        mode, words: selectedWords, currentIndex: 0, direction,
+        errors: [], selectedLeft: null, selectedRight: null, matchedCount: 0
     };
 
     document.getElementById('gameSetupCard').style.display = 'none';
@@ -1248,7 +1233,6 @@ function renderMatchingMode() {
     const rightList = [...words].sort(() => Math.random() - 0.5);
 
     let html = '<div class="matching-grid">';
-
     html += '<div class="matching-column">';
     leftList.forEach(w => {
         html += `<button class="matching-btn" data-type="en" data-id="${w.id}" onclick="handleMatchingGameClick(this)">${w.en}</button>`;
@@ -1450,9 +1434,9 @@ function importFromExcel(event) {
                 });
             }
 
-            newWordsList.forEach(item => {
+            newWordsList.forEach((item, idx) => {
                 dictionary.unshift({
-                    id: Date.now() + Math.random(),
+                    id: Date.now() + idx,
                     ...item
                 });
                 addedCount++;
@@ -1472,8 +1456,3 @@ function importFromExcel(event) {
 // 12. ИНИЦИАЛИЗАЦИЯ
 // ==========================================
 updateColumnCheckboxes();
-renderCategoriesUI();
-renderFormSelectedTags();
-renderSingleTagFilter();
-renderBulkTagSelect();
-renderWords();
