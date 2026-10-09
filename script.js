@@ -1070,7 +1070,7 @@ function renderWords() {
 }
 
 // ==========================================
-// 10. ИГРОВОЙ ДВИЖОК И СТАТИСТИКА
+// 10. ИГРОВОЙ ДВИЖОК, СТАТИСТИКА И СМЕНА ТЕГОВ
 // ==========================================
 let activeGame = {
     mode: '', words: [], currentIndex: 0, direction: 'both',
@@ -1078,51 +1078,6 @@ let activeGame = {
 };
 
 let gameHistory = [];
-
-function attachUserListeners() {
-    if (!currentUser) return;
-
-    // Слушатель личного словаря
-    db.ref(`users_data/${currentUser}/dictionary`).on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            dictionary = Array.isArray(data) ? data : Object.values(data);
-            dictionary.sort((a, b) => b.id - a.id);
-        } else {
-            dictionary = [];
-        }
-        renderWords();
-        populateGameTagFilters();
-        renderSingleTagFilter();
-    });
-
-    // Слушатель личных категорий
-    db.ref(`users_data/${currentUser}/categories`).on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            categories = data;
-        } else {
-            categories = [
-                { id: 1, name: 'Уровень', tags: ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'] },
-                { id: 2, name: 'Часть речи', tags: ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction'] },
-                { id: 3, name: 'Тематика', tags: ['работа', 'путешествия', 'разговорное', 'it'] },
-                { id: 4, name: 'Статус', tags: ['учу', 'знаю', 'на повторении'] },
-                { id: 5, name: 'Категория 5', tags: ['new'] }
-            ];
-            db.ref(`users_data/${currentUser}/categories`).set(categories);
-        }
-        renderCategoriesUI();
-        renderSingleTagFilter();
-        renderBulkTagSelect();
-    });
-
-    // Слушатель истории игр
-    db.ref(`users_data/${currentUser}/game_history`).on('value', (snapshot) => {
-        const data = snapshot.val();
-        gameHistory = data ? Object.values(data) : [];
-        renderGameHistoryUI();
-    });
-}
 
 function populateGameTagFilters() {
     const select = document.getElementById('gameTagFilter');
@@ -1357,7 +1312,7 @@ function checkWrittenGameAnswer(correctText, wordId) {
 }
 
 // ------------------------------------------
-// СОПОСТАВЛЕНИЕ ПАР
+// СОПОСТАВЛЕНИЕ ПАР (С УЧЕТОМ ОШИБОК КЛИКА)
 // ------------------------------------------
 function renderMatchingMode() {
     const container = document.getElementById('activeGameContainer');
@@ -1411,6 +1366,7 @@ function handleMatchingGameClick(btn) {
             activeGame.selectedRight = null;
             activeGame.matchedCount++;
 
+            // Если по этому слову ранее НЕ было ошибки, добавляем в точные совпадения
             if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
                 if (!activeGame.correctWords.some(w => w.id === idLeft)) {
                     activeGame.correctWords.push(wordObj);
@@ -1427,8 +1383,11 @@ function handleMatchingGameClick(btn) {
             btn1.classList.add('wrong');
             btn2.classList.add('wrong');
 
+            // Запоминаем ошибку для выбранного английского слова
             if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
                 activeGame.errors.push(wordObj);
+                // Удаляем из правильных, если случайно попало туда
+                activeGame.correctWords = activeGame.correctWords.filter(w => w.id !== idLeft);
             }
 
             if (navigator.vibrate) navigator.vibrate(200);
@@ -1445,7 +1404,7 @@ function handleMatchingGameClick(btn) {
 }
 
 // ------------------------------------------
-// ИТОГИ И СОХРАНЕНИЕ СТАИСТИКИ
+// ИТОГИ И ИТОГОВАЯ ТАБЛИЦА С ИЗМЕНЕНИЕМ ТЕГОВ
 // ------------------------------------------
 function showGameSummary() {
     const container = document.getElementById('activeGameContainer');
@@ -1457,7 +1416,7 @@ function showGameSummary() {
     const correctCount = total - errorsCount;
     const percentage = Math.round((correctCount / total) * 100);
 
-    // Сохранение записи в историю в Firebase
+    // Сохранение в историю Firebase
     saveGameHistoryEntry({
         date: new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         mode: getModeTitle(activeGame.mode),
@@ -1476,12 +1435,12 @@ function showGameSummary() {
                     Результат: ${percentage}%
                 </div>
                 <p style="color: #64748b; font-size: 14px; margin-top: 4px;">
-                    Всего слов: <strong>${total}</strong> | Угадано: <strong style="color:#10b981;">${correctCount}</strong> | Ошибок: <strong style="color:#ef4444;">${errorsCount}</strong>
+                    Всего слов: <strong>${total}</strong> | Угадано без ошибок: <strong style="color:#10b981;">${correctCount}</strong> | С ошибкой: <strong style="color:#ef4444;">${errorsCount}</strong>
                 </p>
             </div>
     `;
 
-    // Блок слов с ошибками
+    // БЛОК 1: Слова с ошибками
     if (activeGame.errors.length > 0) {
         html += `<div style="margin-bottom: 20px;">
             <h4 style="color: #ef4444; margin-bottom: 8px;">❌ Ошибки / Неугаданные слова (${activeGame.errors.length}):</h4>
@@ -1501,7 +1460,7 @@ function showGameSummary() {
         html += `</div></div>`;
     }
 
-    // Блок правильных слов
+    // БЛОК 2: Правильные слова
     if (activeGame.correctWords.length > 0) {
         html += `<div>
             <h4 style="color: #10b981; margin-bottom: 8px;">✅ Правильные слова (${activeGame.correctWords.length}):</h4>
@@ -1539,7 +1498,7 @@ function getModeTitle(mode) {
 
 function saveGameHistoryEntry(entry) {
     if (!currentUser) return;
-    const newHistory = [entry, ...gameHistory].slice(0, 30); // Храним последние 30 игр
+    const newHistory = [entry, ...gameHistory].slice(0, 30);
     db.ref(`users_data/${currentUser}/game_history`).set(newHistory);
 }
 
