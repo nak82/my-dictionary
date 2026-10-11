@@ -219,7 +219,7 @@
 
     </div>
 
-  <!-- ЭКРАН 2: ТРЕНАЖЕР И ИГРЫ -->
+    <!-- ЭКРАН 2: ТРЕНАЖЕР И ИГРЫ -->
     <div id="viewTrainer" style="display: none;">
         
         <!-- Настройки перед игрой -->
@@ -286,6 +286,21 @@
                     <div class="mode-icon">🧩</div>
                     <div class="mode-title">Сопоставление пар</div>
                     <div class="mode-desc">Подбор пар "Слово — Перевод"</div>
+                </div>
+                <div class="game-mode-card" onclick="startGame('audio_stream')">
+                    <div class="mode-icon">🎧</div>
+                    <div class="mode-title">Аудио-погружение</div>
+                    <div class="mode-desc">Фоновое прослушивание UK (EN ➔ RU ➔ 2x EN)</div>
+                </div>
+                <div class="game-mode-card" onclick="startGame('audio_dictation')">
+                    <div class="mode-icon">🔊</div>
+                    <div class="mode-title">Аудио-диктант</div>
+                    <div class="mode-desc">Слушайте британское произношение и пишите перевод</div>
+                </div>
+                <div class="game-mode-card" onclick="startGame('voice_check')">
+                    <div class="mode-icon">🎙️</div>
+                    <div class="mode-title">Произношение (UK)</div>
+                    <div class="mode-desc">Говорите в микрофон, сравнивайте с эталоном</div>
                 </div>
             </div>
         </div>

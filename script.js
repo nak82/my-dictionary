@@ -1070,6 +1070,34 @@ function renderWords() {
 }
 
 // ==========================================
+// ==========================================
+// БРИТАНСКАЯ ОЗВУЧКА (UK Accent en-GB)
+// ==========================================
+function speak(text, rate = 0.9) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-GB';
+    utterance.rate = rate;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const ukVoice = voices.find(v => v.lang === 'en-GB' || v.lang.includes('GB') || v.lang.includes('en_GB'));
+    if (ukVoice) {
+        utterance.voice = ukVoice;
+    }
+    
+    window.speechSynthesis.speak(utterance);
+}
+
+function speakRu(text) {
+    if (!('speechSynthesis' in window)) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ru-RU';
+    window.speechSynthesis.speak(utterance);
+}
+
+// ==========================================
 // 10. ИГРОВОЙ ДВИЖОК, СТАТИСТИКА И СМЕНА ТЕГОВ
 // ==========================================
 let activeGame = {
@@ -1150,26 +1178,36 @@ function startGame(mode) {
         matchedCount: 0
     };
 
-    document.getElementById('gameSetupCard').style.display = 'none';
-    document.getElementById('gamePlayArea').style.display = 'block';
+    const setupCard = document.getElementById('gameSetupCard');
+    const playArea = document.getElementById('gamePlayArea');
+    if (setupCard) setupCard.style.display = 'none';
+    if (playArea) playArea.style.display = 'block';
 
     renderGameStep();
 }
 
 function exitGame() {
-    document.getElementById('gameSetupCard').style.display = 'block';
-    document.getElementById('gamePlayArea').style.display = 'none';
+    if (audioStreamTimer) clearTimeout(audioStreamTimer);
+    window.speechSynthesis.cancel();
+    
+    const setupCard = document.getElementById('gameSetupCard');
+    const playArea = document.getElementById('gamePlayArea');
+    if (setupCard) setupCard.style.display = 'block';
+    if (playArea) playArea.style.display = 'none';
 }
 
 function renderGameStep() {
     const container = document.getElementById('activeGameContainer');
+    if (!container) return;
     container.innerHTML = '';
 
     const total = activeGame.words.length;
     const current = activeGame.currentIndex;
 
-    document.getElementById('gameProgressText').innerText = `${current} / ${total}`;
-    document.getElementById('gameProgressFill').style.width = `${(current / total) * 100}%`;
+    const progText = document.getElementById('gameProgressText');
+    const progFill = document.getElementById('gameProgressFill');
+    if (progText) progText.innerText = `${current + 1} / ${total}`;
+    if (progFill) progFill.style.width = `${((current + 1) / total) * 100}%`;
 
     if (current >= total && activeGame.mode !== 'matching') {
         showGameSummary();
@@ -1182,6 +1220,12 @@ function renderGameStep() {
         renderWrittenMode();
     } else if (activeGame.mode === 'matching') {
         renderMatchingMode();
+    } else if (activeGame.mode === 'audio_stream') {
+        renderAudioStreamMode();
+    } else if (activeGame.mode === 'audio_dictation') {
+        renderAudioDictationMode();
+    } else if (activeGame.mode === 'voice_check') {
+        renderVoiceCheckMode();
     }
 }
 
@@ -1218,8 +1262,10 @@ function renderFlashcardsMode() {
 
 function flipGameCard() {
     isCardFlipped = !isCardFlipped;
-    document.getElementById('gameCardFront').style.display = isCardFlipped ? 'none' : 'block';
-    document.getElementById('gameCardBack').style.display = isCardFlipped ? 'block' : 'none';
+    const front = document.getElementById('gameCardFront');
+    const back = document.getElementById('gameCardBack');
+    if (front) front.style.display = isCardFlipped ? 'none' : 'block';
+    if (back) back.style.display = isCardFlipped ? 'block' : 'none';
 }
 
 function nextGameCard(known) {
@@ -1269,15 +1315,19 @@ function renderWrittenMode() {
     `;
 
     const input = document.getElementById('gameWrittenInput');
-    input.focus();
-    input.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') checkWrittenGameAnswer(targetText, item.id);
-    });
+    if (input) {
+        input.focus();
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') checkWrittenGameAnswer(targetText, item.id);
+        });
+    }
 }
 
 function checkWrittenGameAnswer(correctText, wordId) {
     const input = document.getElementById('gameWrittenInput');
     const feedback = document.getElementById('gameWrittenFeedback');
+    if (!input || !feedback) return;
+
     const userVal = input.value.trim().toLowerCase();
     const correctVal = correctText.trim().toLowerCase();
 
@@ -1312,7 +1362,7 @@ function checkWrittenGameAnswer(correctText, wordId) {
 }
 
 // ------------------------------------------
-// СОПОСТАВЛЕНИЕ ПАР (С УЧЕТОМ ОШИБОК КЛИКА)
+// СОПОСТАВЛЕНИЕ ПАР
 // ------------------------------------------
 function renderMatchingMode() {
     const container = document.getElementById('activeGameContainer');
@@ -1366,7 +1416,6 @@ function handleMatchingGameClick(btn) {
             activeGame.selectedRight = null;
             activeGame.matchedCount++;
 
-            // Если по этому слову ранее НЕ было ошибки, добавляем в точные совпадения
             if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
                 if (!activeGame.correctWords.some(w => w.id === idLeft)) {
                     activeGame.correctWords.push(wordObj);
@@ -1383,10 +1432,8 @@ function handleMatchingGameClick(btn) {
             btn1.classList.add('wrong');
             btn2.classList.add('wrong');
 
-            // Запоминаем ошибку для выбранного английского слова
             if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
                 activeGame.errors.push(wordObj);
-                // Удаляем из правильных, если случайно попало туда
                 activeGame.correctWords = activeGame.correctWords.filter(w => w.id !== idLeft);
             }
 
@@ -1403,20 +1450,366 @@ function handleMatchingGameClick(btn) {
     }
 }
 
+// ==========================================
+// УРОК 1: АУДИО-ПОГРУЖЕНИЕ (Фоновый режим с паузами и циклами)
+// ==========================================
+let audioStreamState = {
+    isRunning: false,
+    timeoutId: null,
+    totalLoops: 5,   // Количество кругов по списку
+    currentLoop: 1,
+    wordIndex: 0
+};
+
+function renderAudioStreamMode() {
+    const container = document.getElementById('activeGameContainer');
+    
+    container.innerHTML = `
+        <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 30px;">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎧 Аудио-погружение (Фоновый режим)</div>
+            <div id="audioStreamLoopInfo" style="font-size: 12px; font-weight: bold; color: #0284c7; margin-bottom: 15px;">Круг 1 из 5</div>
+            
+            <div id="audioStreamWordEn" style="font-size: 32px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">—</div>
+            <div id="audioStreamWordRu" style="font-size: 20px; color: #10b981; margin-bottom: 20px;">—</div>
+            
+            <div id="audioStatusText" style="font-size: 14px; color: #64748b; font-weight: bold; margin-bottom: 25px;">Подготовка...</div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                <button id="audioPlayPauseBtn" class="btn-main" style="background: #e11d48; max-width: 200px;" onclick="toggleAudioStreamPause()">⏸ Пауза</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button type="button" class="btn-action" style="background: #ef4444;" onclick="markAudioWordFromStream(false)">❌ Учу</button>
+                <button type="button" class="btn-action" style="background: #10b981;" onclick="markAudioWordFromStream(true)">✅ Знаю</button>
+            </div>
+        </div>
+    `;
+
+    startAudioStreamSession();
+}
+
+function startAudioStreamSession() {
+    audioStreamState.isRunning = true;
+    audioStreamState.currentLoop = 1;
+    audioStreamState.wordIndex = 0;
+    playNextAudioStreamWord();
+}
+
+function playNextAudioStreamWord() {
+    if (!audioStreamState.isRunning) return;
+
+    // Проверяем, не закончились ли круги
+    if (audioStreamState.currentLoop > audioStreamState.totalLoops) {
+        document.getElementById('audioStatusText').innerText = '🎉 Все круги прослушаны!';
+        document.getElementById('audioStreamWordEn').innerText = 'Готово!';
+        document.getElementById('audioStreamWordRu').innerText = 'Отличная работа';
+        return;
+    }
+
+    const words = activeGame.words;
+    if (!words || words.length === 0) return;
+
+    // Если дошли до конца списка — переходим на следующий круг
+    if (audioStreamState.wordIndex >= words.length) {
+        audioStreamState.wordIndex = 0;
+        audioStreamState.currentLoop++;
+    }
+
+    if (audioStreamState.currentLoop > audioStreamState.totalLoops) {
+        playNextAudioStreamWord();
+        return;
+    }
+
+    const item = words[audioStreamState.wordIndex];
+    
+    // Обновляем текст на экране
+    const enEl = document.getElementById('audioStreamWordEn');
+    const ruEl = document.getElementById('audioStreamWordRu');
+    const statusEl = document.getElementById('audioStatusText');
+    const loopEl = document.getElementById('audioStreamLoopInfo');
+
+    if (enEl) enEl.innerText = item.en;
+    if (ruEl) ruEl.innerText = item.mainRu || item.ru || '';
+    if (loopEl) loopEl.innerText = `Круг ${audioStreamState.currentLoop} из ${audioStreamState.totalLoops} (Слово ${audioStreamState.wordIndex + 1} из ${words.length})`;
+
+    // ЦИКЛ ОЗВУЧКИ ОДНОГО СЛОВА С ПАУЗАМИ В 2 СЕКУНДЫ:
+    // 1. Британский вариант (EN)
+    if (statusEl) statusEl.innerText = '🇬🇧 ' + item.en;
+    speak(item.en);
+
+    // Пауза 2 секунды перед русским переводом
+    audioStreamState.timeoutId = setTimeout(() => {
+        if (!audioStreamState.isRunning) return;
+
+        // 2. Русский перевод (RU)
+        if (statusEl) statusEl.innerText = '🇷🇺 ' + (item.mainRu || item.ru);
+        speakRu(item.mainRu || item.ru);
+
+        // Пауза 2 секунды перед повторами
+        audioStreamState.timeoutId = setTimeout(() => {
+            if (!audioStreamState.isRunning) return;
+
+            // 3. Первый повтор EN
+            if (statusEl) statusEl.innerText = '🇬🇧 (повтор 1) ' + item.en;
+            speak(item.en);
+
+            // Пауза 2 секунды
+            audioStreamState.timeoutId = setTimeout(() => {
+                if (!audioStreamState.isRunning) return;
+
+                // 4. Второй повтор EN
+                if (statusEl) statusEl.innerText = '🇬🇧 (повтор 2) ' + item.en;
+                speak(item.en);
+
+                // Пауза 2-3 секунды перед переходом к следующему слову, чтобы слова не сливались
+                audioStreamState.timeoutId = setTimeout(() => {
+                    if (!audioStreamState.isRunning) return;
+                    audioStreamState.wordIndex++;
+                    playNextAudioStreamWord();
+                }, 2500);
+
+            }, 2000);
+
+        }, 2000);
+
+    }, 2000);
+}
+
+function toggleAudioStreamPause() {
+    audioStreamState.isRunning = !audioStreamState.isRunning;
+    const btn = document.getElementById('audioPlayPauseBtn');
+    const statusEl = document.getElementById('audioStatusText');
+
+    if (audioStreamState.isRunning) {
+        if (btn) {
+            btn.innerText = '⏸ Пауза';
+            btn.style.background = '#e11d48';
+        }
+        playNextAudioStreamWord();
+    } else {
+        if (btn) {
+            btn.innerText = '▶ Продолжить';
+            btn.style.background = '#10b981';
+        }
+        if (audioStreamState.timeoutId) clearTimeout(audioStreamState.timeoutId);
+        window.speechSynthesis.cancel();
+        if (statusEl) statusEl.innerText = '⏸ На паузе';
+    }
+}
+
+function markAudioWordFromStream(known) {
+    const item = activeGame.words[audioStreamState.wordIndex];
+    if (!item) return;
+
+    if (known) {
+        if (!activeGame.correctWords.some(w => w.id === item.id)) activeGame.correctWords.push(item);
+    } else {
+        if (!activeGame.errors.some(w => w.id === item.id)) activeGame.errors.push(item);
+    }
+}
+
+// Переопределяем функцию выхода, чтобы гасить таймеры фонового режима
+function exitGame() {
+    audioStreamState.isRunning = false;
+    if (audioStreamState.timeoutId) clearTimeout(audioStreamState.timeoutId);
+    window.speechSynthesis.cancel();
+    
+    const setupCard = document.getElementById('gameSetupCard');
+    const playArea = document.getElementById('gamePlayArea');
+    if (setupCard) setupCard.style.display = 'block';
+    if (playArea) playArea.style.display = 'none';
+}
+
 // ------------------------------------------
-// ИТОГИ И ИТОГОВАЯ ТАБЛИЦА С ИЗМЕНЕНИЕМ ТЕГОВ
+// УРОК 2: АУДИО-ДИКТАНТ
+// ------------------------------------------
+function renderAudioDictationMode() {
+    const container = document.getElementById('activeGameContainer');
+    const item = activeGame.words[activeGame.currentIndex];
+
+    container.innerHTML = `
+        <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 25px;">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 10px;">🔊 Аудио-диктант (Слушайте и пишите)</div>
+            
+            <button class="btn-main" style="font-size: 24px; padding: 15px; border-radius: 50px; width: 80px; height: 80px; margin: 15px auto;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
+            <div style="font-size: 12px; color: #0284c7; margin-bottom: 15px; cursor: pointer;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">Нажмите, чтобы прослушать повторно</div>
+
+            <input type="text" id="audioDictInput" placeholder="Введите перевод на русском..." style="text-align: center; font-size: 18px; padding: 12px; margin-bottom: 12px;" autocomplete="off">
+            <button class="btn-main" onclick="checkAudioDictAnswer(${item.id})">Проверить</button>
+
+            <div id="audioDictFeedback" style="display: none; margin-top: 15px; padding: 10px; border-radius: 8px; font-weight: bold;"></div>
+        </div>
+    `;
+
+    setTimeout(() => speak(item.en), 300);
+
+    const input = document.getElementById('audioDictInput');
+    if (input) {
+        input.focus();
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') checkAudioDictAnswer(item.id);
+        });
+    }
+}
+
+function checkAudioDictAnswer(wordId) {
+    const input = document.getElementById('audioDictInput');
+    const feedback = document.getElementById('audioDictFeedback');
+    if (!input || !feedback) return;
+
+    const userVal = input.value.trim().toLowerCase();
+    const currentItem = activeGame.words.find(w => w.id === wordId);
+    const correctVal = (currentItem.mainRu || currentItem.ru || '').trim().toLowerCase();
+
+    if (!userVal) return;
+
+    if (userVal === correctVal) {
+        feedback.style.background = '#d1fae5';
+        feedback.style.color = '#065f46';
+        feedback.innerText = '✨ Верно!';
+        feedback.style.display = 'block';
+
+        if (!activeGame.correctWords.some(w => w.id === wordId)) activeGame.correctWords.push(currentItem);
+    } else {
+        feedback.style.background = '#fee2e2';
+        feedback.style.color = '#991b1b';
+        feedback.innerText = `❌ Ошибка. Правильно: "${currentItem.mainRu || currentItem.ru}" (Слово: ${currentItem.en})`;
+        feedback.style.display = 'block';
+
+        if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
+    }
+
+    setTimeout(() => {
+        activeGame.currentIndex++;
+        renderGameStep();
+    }, 1400);
+}
+
+// ------------------------------------------
+// УРОК 3: ПРОИЗНОШЕНИЕ (Микрофон UK)
+// ------------------------------------------
+function renderVoiceCheckMode() {
+    const container = document.getElementById('activeGameContainer');
+    const item = activeGame.words[activeGame.currentIndex];
+
+    container.innerHTML = `
+        <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 25px;">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎙️ Произношение (UK Accent)</div>
+            <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin: 10px 0;">${item.en}</div>
+            <div style="font-size: 16px; color: #10b981; margin-bottom: 15px;">${item.mainRu || item.ru}</div>
+
+            <button class="btn-main" style="background: #0284c7; max-width: 200px; margin-bottom: 15px;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊 Слушать эталон</button>
+            
+            <div style="margin: 15px 0;">
+                <button id="micBtn" class="btn-main" style="background: #ef4444; font-size: 20px; padding: 15px 25px; border-radius: 50px;" onclick="startVoiceRecognition('${item.en.replace(/'/g, "\\'")}', ${item.id})">🎙️ Говорите...</button>
+            </div>
+
+            <div id="voiceResultBox" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 14px;">
+                <div>Вы сказали: <strong id="recognizedText" style="color: #0284c7;">—</strong></div>
+                <div style="margin-top: 6px; font-weight: bold;" id="matchScoreText">—</div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+                <button type="button" class="btn-action" style="background: #64748b;" onclick="nextVoiceStep(false)">❌ Пропустить / Ошибка</button>
+                <button type="button" class="btn-action" style="background: #10b981;" onclick="nextVoiceStep(true)">✅ Засчитать</button>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => speak(item.en), 300);
+}
+
+function startVoiceRecognition(targetWord, wordId) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Ваш браузер не поддерживает распознавание речи. Попробуйте Google Chrome.');
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-GB';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) {
+        micBtn.innerText = '🔴 Слушаю... Говорите!';
+        micBtn.style.background = '#dc2626';
+    }
+
+    recognition.onresult = (event) => {
+        const speechResult = event.results[0][0].transcript.trim().toLowerCase();
+        if (micBtn) {
+            micBtn.innerText = '🎙️ Сказать снова';
+            micBtn.style.background = '#ef4444';
+        }
+
+        const cleanTarget = targetWord.toLowerCase().replace(/[^a-z\s]/g, '');
+        const cleanSpoken = speechResult.replace(/[^a-z\s]/g, '');
+
+        let matchPercent = 0;
+        if (cleanSpoken === cleanTarget) {
+            matchPercent = 100;
+        } else if (cleanSpoken.includes(cleanTarget) || cleanTarget.includes(cleanSpoken)) {
+            matchPercent = 80;
+        } else {
+            matchPercent = 30;
+        }
+
+        const resBox = document.getElementById('voiceResultBox');
+        const recTextEl = document.getElementById('recognizedText');
+        const scoreEl = document.getElementById('matchScoreText');
+
+        if (resBox) resBox.style.display = 'block';
+        if (recTextEl) recTextEl.innerText = `"${speechResult}"`;
+        if (scoreEl) scoreEl.innerHTML = `Совпадение: <span style="color: ${matchPercent >= 80 ? '#10b981' : '#f59e0b'};">${matchPercent}%</span>`;
+
+        const currentItem = activeGame.words.find(w => w.id === wordId);
+        if (matchPercent >= 80) {
+            if (!activeGame.correctWords.some(w => w.id === wordId)) activeGame.correctWords.push(currentItem);
+        } else {
+            if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
+        }
+    };
+
+    recognition.onerror = () => {
+        if (micBtn) {
+            micBtn.innerText = '🎙️ Ошибка. Повторить';
+            micBtn.style.background = '#ef4444';
+        }
+    };
+
+    recognition.start();
+}
+
+function nextVoiceStep(passed) {
+    const currentItem = activeGame.words[activeGame.currentIndex];
+    if (passed) {
+        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) activeGame.correctWords.push(currentItem);
+    } else {
+        if (!activeGame.errors.some(w => w.id === currentItem.id)) activeGame.errors.push(currentItem);
+    }
+    activeGame.currentIndex++;
+    renderGameStep();
+}
+
+// ------------------------------------------
+// ИТОГИ И СТАТИСТИКА ИГР
 // ------------------------------------------
 function showGameSummary() {
     const container = document.getElementById('activeGameContainer');
-    document.getElementById('gameProgressFill').style.width = '100%';
-    document.getElementById('gameProgressText').innerText = 'Завершено!';
+    if (!container) return;
+
+    const progFill = document.getElementById('gameProgressFill');
+    const progText = document.getElementById('gameProgressText');
+    if (progFill) progFill.style.width = '100%';
+    if (progText) progText.innerText = 'Завершено!';
 
     const total = activeGame.words.length;
     const errorsCount = activeGame.errors.length;
     const correctCount = total - errorsCount;
-    const percentage = Math.round((correctCount / total) * 100);
+    const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
 
-    // Сохранение в историю Firebase
     saveGameHistoryEntry({
         date: new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
         mode: getModeTitle(activeGame.mode),
@@ -1435,12 +1828,11 @@ function showGameSummary() {
                     Результат: ${percentage}%
                 </div>
                 <p style="color: #64748b; font-size: 14px; margin-top: 4px;">
-                    Всего слов: <strong>${total}</strong> | Угадано без ошибок: <strong style="color:#10b981;">${correctCount}</strong> | С ошибкой: <strong style="color:#ef4444;">${errorsCount}</strong>
+                    Всего слов: <strong>${total}</strong> | Угадано: <strong style="color:#10b981;">${correctCount}</strong> | Ошибок: <strong style="color:#ef4444;">${errorsCount}</strong>
                 </p>
             </div>
     `;
 
-    // БЛОК 1: Слова с ошибками
     if (activeGame.errors.length > 0) {
         html += `<div style="margin-bottom: 20px;">
             <h4 style="color: #ef4444; margin-bottom: 8px;">❌ Ошибки / Неугаданные слова (${activeGame.errors.length}):</h4>
@@ -1460,7 +1852,6 @@ function showGameSummary() {
         html += `</div></div>`;
     }
 
-    // БЛОК 2: Правильные слова
     if (activeGame.correctWords.length > 0) {
         html += `<div>
             <h4 style="color: #10b981; margin-bottom: 8px;">✅ Правильные слова (${activeGame.correctWords.length}):</h4>
@@ -1493,6 +1884,9 @@ function getModeTitle(mode) {
     if (mode === 'flashcards') return '🃏 Флеш-карточки';
     if (mode === 'written') return '✍️ Письменный';
     if (mode === 'matching') return '🧩 Пары';
+    if (mode === 'audio_stream') return '🎧 Аудио-погружение';
+    if (mode === 'audio_dictation') return '🔊 Аудио-диктант';
+    if (mode === 'voice_check') return '🎙️ Произношение (UK)';
     return mode;
 }
 
