@@ -77,7 +77,9 @@ async function handleAuthSubmit() {
         return;
     }
 
-    // Запрос к ветке пользователей в Firebase
+    // Хешируем введенный пароль перед проверкой или сохранением
+    const passwordHash = await hashPassword(passwordInput);
+
     const userRef = db.ref(`users_db/${loginInput}`);
     const snapshot = await userRef.once('value');
     const userData = snapshot.val();
@@ -88,11 +90,11 @@ async function handleAuthSubmit() {
             errEl.style.display = 'block';
             return;
         }
-        // Создаем нового пользователя
-        await userRef.set({ password: passwordInput, createdAt: Date.now() });
+        // Сохраняем в базу ТОЛЬКО хеш пароля, а не открытый текст
+        await userRef.set({ password: passwordHash, createdAt: Date.now() });
         setCurrentUser(loginInput);
     } else {
-        if (!userData || userData.password !== passwordInput) {
+        if (!userData || userData.password !== passwordHash) {
             errEl.innerText = 'Неверный логин или пароль!';
             errEl.style.display = 'block';
             return;
@@ -100,7 +102,6 @@ async function handleAuthSubmit() {
         setCurrentUser(loginInput);
     }
 }
-
 function setCurrentUser(username) {
     currentUser = username;
     localStorage.setItem('my_dict_user', username);
@@ -976,97 +977,6 @@ function renderTableHeaders() {
     }
 
     tr.innerHTML = html;
-}
-
-function renderWords() {
-    renderTableHeaders();
-
-    const tbody = document.getElementById('dictTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    const filtered = getFilteredWords();
-
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding: 20px;">Слов не найдено</td></tr>';
-        updateBulkUI();
-        return;
-    }
-
-    filtered.forEach(item => {
-        const isChecked = selectedWordIds.includes(item.id);
-        const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">#${t}</span>`).join('') : '';
-        const mainText = item.mainRu || item.ru || '';
-
-        const tr = document.createElement('tr');
-        
-        let rowHtml = `<td><input type="checkbox" class="word-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectWord(${item.id})"></td>`;
-
-        if (columnVisibility.en) {
-            rowHtml += `
-                <td>
-                    <strong>${item.en}</strong>
-                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en}')">🔊</button>
-                </td>
-            `;
-        } else {
-            rowHtml += `
-                <td>
-                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
-                        <strong>${item.en}</strong>
-                    </span>
-                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en}')">🔊</button>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.mainRu) {
-            rowHtml += `<td style="color:#27ae60; font-weight:600;">${mainText}</td>`;
-        } else {
-            rowHtml += `
-                <td>
-                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
-                        <strong style="color:#27ae60;">${mainText}</strong>
-                    </span>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.extraRu) {
-            rowHtml += `<td style="color:#64748b;"><div class="cell-scrollable">${item.extraRu || ''}</div></td>`;
-        }
-
-        if (columnVisibility.context) {
-            rowHtml += `<td style="white-space:pre-line; color:#555;"><div class="cell-scrollable">${item.context || ''}</div></td>`;
-        }
-
-        if (columnVisibility.tags) {
-            rowHtml += `
-                <td>
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
-                        <div class="tags">${tagsHtml}</div>
-                        <button type="button" class="btn-edit-cat" onclick="quickEditWordTags(${item.id})" title="Быстро изменять теги">✏</button>
-                    </div>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.actions) {
-            rowHtml += `
-                <td>
-                    <div class="actions">
-                        <button class="btn-action btn-edit" onclick="editWord(${item.id})">✏</button>
-                        <button class="btn-action btn-delete" onclick="deleteWord(${item.id})">🗑️</button>
-                    </div>
-                </td>
-            `;
-        }
-
-        tr.innerHTML = rowHtml;
-        tbody.appendChild(tr);
-    });
-
-    updateBulkUI();
 }
 
 // ==========================================
@@ -2063,3 +1973,239 @@ function importFromExcel(event) {
 // 12. ИНИЦИАЛИЗАЦИЯ
 // ==========================================
 updateColumnCheckboxes();
+
+// ==========================================
+// ЕДИНЫЙ ОПТИМИЗИРОВАННЫЙ РЕНДЕР СЛОВ (ТАБЛИЦА + СКРОЛЛ + СТАТИСТИКА)
+// ==========================================
+function renderWords() {
+    // 1. Сохраняем текущую позицию скролла страницы перед перерисовкой
+    const currentScrollY = window.scrollY;
+
+    renderTableHeaders();
+
+    const tbody = document.getElementById('dictTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const filtered = getFilteredWords();
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding: 20px;">Слов не найдено</td></tr>';
+        updateBulkUI();
+        return;
+    }
+
+    filtered.forEach(item => {
+        // Инициализация полей статистики, если их нет
+        if (item.reviewCount === undefined) item.reviewCount = 0;
+        if (item.errorCount === undefined) item.errorCount = 0;
+
+        const isChecked = selectedWordIds.includes(item.id);
+        const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">#${t}</span>`).join('') : '';
+        const mainText = item.mainRu || item.ru || '';
+
+        const tr = document.createElement('tr');
+        tr.id = `word-row-${item.id}`;
+        
+        let rowHtml = `<td><input type="checkbox" class="word-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectWord(${item.id})"></td>`;
+
+        if (columnVisibility.en) {
+            rowHtml += `
+                <td>
+                    <strong>${item.en}</strong>
+                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
+                    <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Повторов: ${item.reviewCount} | Ош: <span style="color: ${item.errorCount > 0 ? '#ef4444' : 'inherit'};">${item.errorCount}</span></div>
+                </td>
+            `;
+        } else {
+            rowHtml += `
+                <td>
+                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
+                        <strong>${item.en}</strong>
+                    </span>
+                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.mainRu) {
+            rowHtml += `<td style="color:#27ae60; font-weight:600;">${mainText}</td>`;
+        } else {
+            rowHtml += `
+                <td>
+                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
+                        <strong style="color:#27ae60;">${mainText}</strong>
+                    </span>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.extraRu) {
+            rowHtml += `<td style="color:#64748b;"><div class="cell-scrollable">${item.extraRu || ''}</div></td>`;
+        }
+
+        if (columnVisibility.context) {
+            rowHtml += `<td style="white-space:pre-line; color:#555;"><div class="cell-scrollable">${item.context || ''}</div></td>`;
+        }
+
+        if (columnVisibility.tags) {
+            rowHtml += `
+                <td>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                        <div class="tags">${tagsHtml}</div>
+                        <button type="button" class="btn-edit-cat" onclick="quickEditWordTags(${item.id})" title="Быстро изменять теги">✏</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.actions) {
+            rowHtml += `
+                <td>
+                    <div class="actions">
+                        <button class="btn-action btn-edit" onclick="editWord(${item.id})">✏</button>
+                        <button class="btn-action btn-delete" onclick="deleteWord(${item.id})">🗑️</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+    });
+
+    updateBulkUI();
+
+    // 2. Мгновенно возвращаем скролл на прежнее место без рывков
+    window.scrollTo({
+        top: currentScrollY,
+        behavior: 'instant'
+    });
+}
+
+// ------------------------------------------
+// ДОБАВЛЕНИЕ СЛОВА С МЕТadАТА СТАТИСТИКИ
+// ------------------------------------------
+function addNewWord(event) {
+    if (event) event.preventDefault();
+
+    const enInput = document.getElementById('newEnWord');
+    const mainRuInput = document.getElementById('newMainRuWord');
+    const extraRuInput = document.getElementById('newExtraRuWord');
+    const contextInput = document.getElementById('newContextWord');
+
+    if (!enInput || !mainRuInput) return;
+
+    const en = enInput.value.trim();
+    const mainRu = mainRuInput.value.trim();
+    const extraRu = extraRuInput ? extraRuInput.value.trim() : '';
+    const context = contextInput ? contextInput.value.trim() : '';
+
+    if (!en || !mainRu) {
+        alert('Заполните обязательные поля (Английский и Основной перевод)!');
+        return;
+    }
+
+    // Собираем выбранные теги из чекбоксов формы добавления
+    const selectedTags = [];
+    document.querySelectorAll('.new-word-tag-checkbox:checked').forEach(cb => {
+        selectedTags.push(cb.value);
+    });
+
+    const newWord = {
+        id: Date.now(),
+        en,
+        mainRu,
+        extraRu,
+        context,
+        tags: selectedTags,
+        createdAt: new Date().toISOString(), // Дата создания для статистики
+        lastReviewed: null,                  // Когда последний раз тренировали
+        reviewCount: 0,                      // Сколько раз участвовало в играх
+        errorCount: 0                        // Сколько раз совершались ошибки
+    };
+
+    dictionary.unshift(newWord); // Добавляем в начало локального массива
+    syncDictionaryWithFirebase();
+
+    // Очищаем форму
+    enInput.value = '';
+    mainRuInput.value = '';
+    if (extraRuInput) extraRuInput.value = '';
+    if (contextInput) contextInput.value = '';
+    document.querySelectorAll('.new-word-tag-checkbox').forEach(cb => cb.checked = false);
+
+    renderWords();
+}
+
+// ==========================================
+// БЕЗОПАСНОСТЬ: ХЕШИРОВАНИЕ ПАРОЛЕЙ (SHA-256)
+// ==========================================
+async function hashPassword(password) {
+    const msgUint8 = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ==========================================
+// УПРАВЛЕНИЕ СМЕНОЙ ПАРОЛЯ
+// ==========================================
+function openChangePasswordModal() {
+    document.getElementById('oldPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('changePassError').style.display = 'none';
+    document.getElementById('changePassSuccess').style.display = 'none';
+    document.getElementById('changePasswordModal').style.display = 'flex';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+async function submitChangePassword() {
+    const oldPass = document.getElementById('oldPasswordInput').value.trim();
+    const newPass = document.getElementById('newPasswordInput').value.trim();
+    const errEl = document.getElementById('changePassError');
+    const succEl = document.getElementById('changePassSuccess');
+
+    errEl.style.display = 'none';
+    succEl.style.display = 'none';
+
+    if (!oldPass || !newPass) {
+        errEl.innerText = 'Заполните оба поля!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    if (newPass.length < 4) {
+        errEl.innerText = 'Новый пароль слишком короткий (минимум 4 символа)!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    if (!currentUser) return;
+
+    // Проверяем старый пароль путем хеширования
+    const oldPassHash = await hashPassword(oldPass);
+    const userRef = db.ref(`users_db/${currentUser}`);
+    const snapshot = await userRef.once('value');
+    const userData = snapshot.val();
+
+    if (!userData || userData.password !== oldPassHash) {
+        errEl.innerText = 'Неверный старый пароль!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    // Хешируем и сохраняем новый пароль
+    const newPassHash = await hashPassword(newPass);
+    await userRef.update({ password: newPassHash });
+
+    succEl.innerText = 'Пароль успешно изменен!';
+    succEl.style.display = 'block';
+
+    setTimeout(() => {
+        closeChangePasswordModal();
+    }, 1500);
+}
