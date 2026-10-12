@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="ru">
-<!DOCTYPE html>
-<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,13 +41,16 @@
 
     <h1>📘 Мой Английский Словарь</h1>
 
+    <!-- ПАНЕЛЬ ПОЛЬЗОВАТЕЛЯ -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px;">
+        <span style="font-weight: bold; color: #334155;">👤 Пользователь: <span id="currentUserLabel" style="color: #10b981;">—</span></span>
+        <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-action" style="background: #0284c7; padding: 6px 12px;" onclick="openChangePasswordModal()">🔑 Сменить пароль</button>
+            <button type="button" class="btn-action" style="background: #64748b; padding: 6px 12px;" onclick="logoutUser()">🚪 Выйти</button>
+        </div>
+    </div>
+
     <!-- ВКЛАДКИ И ЭКСПОРТ/ИМПОРТ -->
-
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-    <span style="font-weight: bold; color: #334155;">👤 Пользователь: <span id="currentUserLabel" style="color: #10b981;">—</span></span>
-    <button type="button" class="btn-action" style="background: #64748b; padding: 6px 12px;" onclick="logoutUser()">🚪 Выйти</button>
-</div>
-
     <div class="nav-tabs">
         <button class="tab-btn active" id="tabDict" onclick="switchTab('dictionary')">📖 Словарь (Таблица)</button>
         <button class="tab-btn" id="tabTrain" onclick="switchTab('trainer')">🎯 Тренажер и Игры</button>
@@ -81,6 +82,28 @@
             <div style="display: flex; gap: 10px;">
                 <button type="button" class="btn-main" id="btnRunBulkAdd" onclick="processBulkWordsAdd()">🚀 Обработать и добавить все</button>
                 <button type="button" class="btn-cancel" style="display: block; width: 120px;" onclick="closeBulkAddModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО СМЕНЫ ПАРОЛЯ -->
+    <div id="changePasswordModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 360px; text-align: center;">
+            <h3 style="margin-bottom: 15px; color: #1e293b;">🔑 Смена пароля</h3>
+            
+            <div class="form-group">
+                <input type="password" id="oldPasswordInput" placeholder="Старый пароль">
+            </div>
+            <div class="form-group">
+                <input type="password" id="newPasswordInput" placeholder="Новый пароль">
+            </div>
+
+            <div id="changePassError" style="color: #ef4444; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+            <div id="changePassSuccess" style="color: #10b981; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-main" onclick="submitChangePassword()">Сохранить</button>
+                <button type="button" class="btn-cancel" onclick="closeChangePasswordModal()">Отмена</button>
             </div>
         </div>
     </div>
@@ -243,7 +266,7 @@
             <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 15px;">
                 <div style="flex: 1; min-width: 200px;">
                     <label>🏷️ Фильтр по тегу:</label>
-                    <select id="gameTagFilter" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
+                    <select id="gameTagFilter" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;" onchange="renderWordChecklistUI()">
                         <!-- Наполняется скриптом -->
                     </select>
                 </div>
@@ -258,6 +281,24 @@
                         <option value="custom">Ваш вариант...</option>
                     </select>
                     <input type="number" id="gameCustomSize" placeholder="Введите количество" min="1" style="display: none; width: 100%; margin-top: 8px; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
+                </div>
+            </div>
+
+            <!-- ВЫПАДАЮЩИЙ СПИСОК ВЫБОРА КОНКРЕТНЫХ СЛОВ -->
+            <div style="margin-bottom: 15px;">
+                <button type="button" class="btn-action" style="background: #0d9488; width: 100%; padding: 10px;" onclick="toggleWordChecklistDropdown()">
+                    📋 Выбрать слова для тренировки (<span id="selectedWordsCountLabel">все</span>) ▾
+                </button>
+                
+                <div id="wordChecklistDropdown" class="card" style="display: none; margin-top: 8px; max-height: 220px; overflow-y: auto; background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: bold;">
+                        <span>Управление словами сессии:</span>
+                        <div>
+                            <span style="color: #0284c7; cursor: pointer; margin-right: 10px;" onclick="setAllChecklistWords(true)">Выбрать все</span>
+                            <span style="color: #ef4444; cursor: pointer;" onclick="setAllChecklistWords(false)">Снять все</span>
+                        </div>
+                    </div>
+                    <div id="wordChecklistContainer" style="display: flex; flex-direction: column; gap: 6px;"></div>
                 </div>
             </div>
 
@@ -320,38 +361,6 @@
         </div>
 
     </div>
-
-
-
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px;">
-    <span style="font-weight: bold; color: #334155;">👤 Пользователь: <span id="currentUserLabel" style="color: #10b981;">—</span></span>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn-action" style="background: #0284c7; padding: 6px 12px;" onclick="openChangePasswordModal()">🔑 Сменить пароль</button>
-        <button type="button" class="btn-action" style="background: #64748b; padding: 6px 12px;" onclick="logoutUser()">🚪 Выйти</button>
-    </div>
-</div>
-
-<!-- МОДАЛЬНОЕ ОКНО СМЕНЫ ПАРОЛЯ -->
-<div id="changePasswordModal" class="modal-overlay" style="display: none;">
-    <div class="modal-card" style="max-width: 360px; text-align: center;">
-        <h3 style="margin-bottom: 15px; color: #1e293b;">🔑 Смена пароля</h3>
-        
-        <div class="form-group">
-            <input type="password" id="oldPasswordInput" placeholder="Старый пароль">
-        </div>
-        <div class="form-group">
-            <input type="password" id="newPasswordInput" placeholder="Новый пароль">
-        </div>
-
-        <div id="changePassError" style="color: #ef4444; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
-        <div id="changePassSuccess" style="color: #10b981; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: none;"></div>
-
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button type="button" class="btn-main" onclick="submitChangePassword()">Сохранить</button>
-            <button type="button" class="btn-cancel" onclick="closeChangePasswordModal()">Отмена</button>
-        </div>
-    </div>
-</div>
 
     <script src="script.js"></script>
 </body>

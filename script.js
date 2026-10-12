@@ -1,5 +1,5 @@
 // ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ И Простая АВТОРИЗАЦИЯ (FIREBASE)
+// 1. ИНИЦИАЛИЗАЦИЯ И АВТОРИЗАЦИЯ (FIREBASE)
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyD0-Rjbm8_eMx9wWaDu2NJQA1M_WX06Hnw",
@@ -33,6 +33,8 @@ let activeTagFilter = '';
 let currentSortColumn = 'en';
 let currentSortDirection = 'asc';
 
+let lastEditedWordId = null;
+
 let columnVisibility = JSON.parse(localStorage.getItem('my_column_visibility')) || {
     en: true, mainRu: true, extraRu: true, context: true, tags: true, actions: true
 };
@@ -63,23 +65,19 @@ function toggleAuthMode(e) {
     }
 }
 
-// Обработка кнопки Войти / Зарегистрироваться
 async function handleAuthSubmit() {
     const loginInput = document.getElementById('authLogin').value.trim().toLowerCase();
     const passwordInput = document.getElementById('authPassword').value.trim();
     const errEl = document.getElementById('authError');
 
     errEl.style.display = 'none';
-
     if (!loginInput || !passwordInput) {
         errEl.innerText = 'Заполните логин и пароль!';
         errEl.style.display = 'block';
         return;
     }
 
-    // Хешируем введенный пароль перед проверкой или сохранением
     const passwordHash = await hashPassword(passwordInput);
-
     const userRef = db.ref(`users_db/${loginInput}`);
     const snapshot = await userRef.once('value');
     const userData = snapshot.val();
@@ -90,7 +88,6 @@ async function handleAuthSubmit() {
             errEl.style.display = 'block';
             return;
         }
-        // Сохраняем в базу ТОЛЬКО хеш пароля, а не открытый текст
         await userRef.set({ password: passwordHash, createdAt: Date.now() });
         setCurrentUser(loginInput);
     } else {
@@ -102,13 +99,12 @@ async function handleAuthSubmit() {
         setCurrentUser(loginInput);
     }
 }
+
 function setCurrentUser(username) {
     currentUser = username;
     localStorage.setItem('my_dict_user', username);
     document.getElementById('authModal').style.display = 'none';
     document.getElementById('currentUserLabel').innerText = username;
-    
-    // Загружаем данные конкретного пользователя
     attachUserListeners();
 }
 
@@ -121,7 +117,6 @@ function logoutUser() {
 function attachUserListeners() {
     if (!currentUser) return;
 
-    // Слушатель личного словаря
     db.ref(`users_data/${currentUser}/dictionary`).on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -135,7 +130,6 @@ function attachUserListeners() {
         renderSingleTagFilter();
     });
 
-    // Слушатель личных категорий
     db.ref(`users_data/${currentUser}/categories`).on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -152,11 +146,9 @@ function attachUserListeners() {
         }
         renderCategoriesUI();
         renderSingleTagFilter();
-        renderBulkTagSelect();
     });
 }
 
-// Сохранение в облако по тегу пользователя
 function saveAndRender() {
     if (!currentUser) return;
     const dictObject = {};
@@ -171,7 +163,6 @@ function saveCategories() {
     db.ref(`users_data/${currentUser}/categories`).set(categories);
 }
 
-// Автоматическая авторизация, если пользователь уже входил с этого устройства
 if (currentUser) {
     document.getElementById('authModal').style.display = 'none';
     document.getElementById('currentUserLabel').innerText = currentUser;
@@ -181,7 +172,7 @@ if (currentUser) {
 }
 
 // ==========================================
-// 2. СВОРАЧИВАНИЕ ФОРМЫ И НАВИГАЦИЯ
+// 2. НАВИГАЦИЯ И ФОРМА
 // ==========================================
 function toggleFormCard() {
     const card = document.getElementById('formCard');
@@ -212,29 +203,54 @@ function switchTab(tab) {
         document.getElementById('tabTrain').classList.add('active');
         document.getElementById('tabDict').classList.remove('active');
         populateGameTagFilters();
+        restoreGameSettings();
         exitGame();
     }
 }
 
-function speak(text) {
-    if (!text) return;
+function restoreGameSettings() {
+    const savedTag = localStorage.getItem('my_dict_last_tag');
+    const savedSize = localStorage.getItem('my_dict_last_size');
+    const savedDir = localStorage.getItem('my_dict_last_dir');
+
+    if (savedTag) {
+        const tagSelect = document.getElementById('gameTagFilter');
+        if (tagSelect) tagSelect.value = savedTag;
+    }
+    if (savedSize) {
+        const sizeSelect = document.getElementById('gameSizeSelect');
+        if (sizeSelect) {
+            sizeSelect.value = savedSize;
+            toggleCustomGameSize(sizeSelect);
+        }
+    }
+    if (savedDir) {
+        const dirSelect = document.getElementById('gameDirection');
+        if (dirSelect) dirSelect.value = savedDir;
+    }
+}
+
+function speak(text, rate = 0.9) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = 'en-GB';
+    utterance.rate = rate;
+    const voices = window.speechSynthesis.getVoices();
+    const ukVoice = voices.find(v => v.lang === 'en-GB' || v.lang.includes('GB') || v.lang.includes('en_GB'));
+    if (ukVoice) utterance.voice = ukVoice;
     window.speechSynthesis.speak(utterance);
 }
 
-function getAllTags() {
-    let all = [];
-    categories.forEach(cat => {
-        cat.tags.forEach(t => {
-            if (!all.includes(t)) all.push(t);
-        });
-    });
-    return all;
+function speakRu(text) {
+    if (!('speechSynthesis' in window)) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ru-RU';
+    window.speechSynthesis.speak(utterance);
 }
 
 // ==========================================
-// 3. УПРАВЛЕНИЕ КАТЕГОРИЯМИ И ТЕГАМИ
+// 3. КАТЕГОРИИ И ТЕГИ
 // ==========================================
 function editCategoryName(catId) {
     const cat = categories.find(c => c.id === catId);
@@ -250,7 +266,6 @@ function addTagToCategory(catId) {
     const input = document.getElementById(`inputCatTag_${catId}`);
     const tag = input.value.trim().toLowerCase();
     if (!tag) return;
-
     const cat = categories.find(c => c.id === catId);
     if (cat && !cat.tags.includes(tag)) {
         cat.tags.push(tag);
@@ -265,14 +280,12 @@ function removeTagFromCategory(catId, tag, event) {
     if (cat) {
         cat.tags = cat.tags.filter(t => t !== tag);
         selectedFormTags = selectedFormTags.filter(t => t !== tag);
-        
         dictionary = dictionary.map(word => {
             if (word.tags && word.tags.includes(tag)) {
                 return { ...word, tags: word.tags.filter(t => t !== tag) };
             }
             return word;
         });
-
         saveAndRender();
         saveCategories();
         renderFormSelectedTags();
@@ -282,17 +295,10 @@ function removeTagFromCategory(catId, tag, event) {
 function quickEditWordTags(wordId) {
     const word = dictionary.find(w => w.id === wordId);
     if (!word) return;
-
     const currentTagsStr = word.tags ? word.tags.join(', ') : '';
     const newTagsStr = prompt(`Редактирование тегов для "${word.en}":\n(вводите через запятую)`, currentTagsStr);
-
     if (newTagsStr !== null) {
-        const newTags = newTagsStr
-            .split(',')
-            .map(t => t.trim().toLowerCase().replace(/^#/, ''))
-            .filter(t => t !== '');
-
-        word.tags = newTags;
+        word.tags = newTagsStr.split(',').map(t => t.trim().toLowerCase().replace(/^#/, '')).filter(t => t !== '');
         saveAndRender();
     }
 }
@@ -315,7 +321,6 @@ function renderCategoriesUI() {
     categories.forEach(cat => {
         const catBox = document.createElement('div');
         catBox.className = 'cat-box';
-
         let tagsHtml = cat.tags.map(tag => {
             const isSelected = selectedFormTags.includes(tag);
             return `
@@ -337,7 +342,6 @@ function renderCategoriesUI() {
                 <button type="button" onclick="addTagToCategory(${cat.id})">+ Добавить</button>
             </div>
         `;
-
         grid.appendChild(catBox);
     });
 }
@@ -346,7 +350,6 @@ function renderFormSelectedTags() {
     const container = document.getElementById('selectedWordTags');
     if (!container) return;
     container.innerHTML = '';
-
     selectedFormTags.forEach(tag => {
         const chip = document.createElement('div');
         chip.className = 'tag-chip selected';
@@ -357,53 +360,8 @@ function renderFormSelectedTags() {
 }
 
 // ==========================================
-// 4. ПРОВЕРКА ДУБЛИКАТОВ И АВТОПЕРЕВОД
+// 4. АВТОПЕРЕВОД И ВЫДЕЛЕНИЕ ТЕГОВ ПО ЧАСТЯМ РЕЧИ
 // ==========================================
-function handleEnglishInput() {
-    const word = document.getElementById('englishWord').value.trim().toLowerCase();
-    const dupBox = document.getElementById('duplicateWarning');
-    const dupDetails = document.getElementById('duplicateDetails');
-    
-    duplicateMode = 'none';
-    existingDuplicateId = null;
-    if (dupBox) dupBox.style.display = 'none';
-
-    if (!word) {
-        autoTranslate();
-        return;
-    }
-
-    const editId = document.getElementById('editWordId').value;
-    const existing = dictionary.find(item => item.en.toLowerCase() === word && item.id !== parseInt(editId));
-
-    if (existing && dupBox && dupDetails) {
-        existingDuplicateId = existing.id;
-        const mainTr = existing.mainRu || existing.ru || 'без перевода';
-        dupDetails.innerText = `Текущий перевод: «${mainTr}»`;
-        dupBox.style.display = 'block';
-    }
-
-    autoTranslate();
-}
-
-function setDuplicateAction(action) {
-    duplicateMode = action;
-    const dupBox = document.getElementById('duplicateWarning');
-    if (!dupBox) return;
-
-    if (action === 'replace') {
-        dupBox.style.background = '#d1e7dd';
-        dupBox.style.borderColor = '#badbcc';
-        dupBox.style.color = '#0f5132';
-        dupBox.innerHTML = '✅ <strong>Режим замены:</strong> при сохранении текущие данные слова будут обновлены.';
-    } else if (action === 'add_new') {
-        dupBox.style.background = '#cff4fc';
-        dupBox.style.borderColor = '#b6effb';
-        dupBox.style.color = '#055160';
-        dupBox.innerHTML = '➕ <strong>Режим дубликата:</strong> слово сохраняется как новая отдельная карточка.';
-    }
-}
-
 function cleanText(text) {
     return text.toLowerCase().replace(/^[a-я]\.\s*/gi, '').trim();
 }
@@ -469,6 +427,33 @@ async function fetchWordDetails(word) {
     }
 }
 
+function handleEnglishInput() {
+    const word = document.getElementById('englishWord').value.trim().toLowerCase();
+    const dupBox = document.getElementById('duplicateWarning');
+    const dupDetails = document.getElementById('duplicateDetails');
+    
+    duplicateMode = 'none';
+    existingDuplicateId = null;
+    if (dupBox) dupBox.style.display = 'none';
+
+    if (!word) {
+        autoTranslate();
+        return;
+    }
+
+    const editId = document.getElementById('editWordId').value;
+    const existing = dictionary.find(item => item.en.toLowerCase() === word && item.id !== parseInt(editId));
+
+    if (existing && dupBox && dupDetails) {
+        existingDuplicateId = existing.id;
+        const mainTr = existing.mainRu || existing.ru || 'без перевода';
+        dupDetails.innerText = `Текущий перевод: «${mainTr}»`;
+        dupBox.style.display = 'block';
+    }
+
+    autoTranslate();
+}
+
 function autoTranslate(forceRefresh = false) {
     if (document.getElementById('editWordId').value !== "" && !forceRefresh) return;
 
@@ -495,6 +480,7 @@ function autoTranslate(forceRefresh = false) {
             return;
         }
 
+        // Автоматически добавляем найденные части речи в выбранные теги формы
         details.detectedPosList.forEach(posTag => {
             if (!selectedFormTags.includes(posTag)) {
                 selectedFormTags.push(posTag);
@@ -565,124 +551,25 @@ function addTranslationOption(text, isMain) {
     }
 }
 
-// ==========================================
-// 5. МАССОВОЕ ДОБАВЛЕНИЕ СЛОВ
-// ==========================================
-function openBulkAddModal() {
-    document.getElementById('bulkAddModal').style.display = 'flex';
-    document.getElementById('bulkWordsTextarea').value = '';
-    document.getElementById('bulkAddProgress').style.display = 'none';
+function setDuplicateAction(action) {
+    duplicateMode = action;
+    const dupBox = document.getElementById('duplicateWarning');
+    if (!dupBox) return;
+
+    if (action === 'replace') {
+        dupBox.style.background = '#d1e7dd';
+        dupBox.style.borderColor = '#badbcc';
+        dupBox.style.color = '#0f5132';
+        dupBox.innerHTML = '✅ <strong>Режим замены:</strong> при сохранении текущие данные слова будут обновлены.';
+    } else if (action === 'add_new') {
+        dupBox.style.background = '#cff4fc';
+        dupBox.style.borderColor = '#b6effb';
+        dupBox.style.color = '#055160';
+        dupBox.innerHTML = '➕ <strong>Режим дубликата:</strong> слово сохраняется как новая отдельная карточка.';
+    }
 }
 
-function closeBulkAddModal() {
-    document.getElementById('bulkAddModal').style.display = 'none';
-}
-
-async function processBulkWordsAdd() {
-    const rawText = document.getElementById('bulkWordsTextarea').value;
-    if (!rawText.trim()) {
-        alert('Введите слова для добавления!');
-        return;
-    }
-
-    const words = rawText
-        .split(/[\n,]+/)
-        .map(w => w.trim().toLowerCase())
-        .filter(w => w.length > 0);
-
-    if (words.length === 0) return;
-
-    const btnRun = document.getElementById('btnRunBulkAdd');
-    const progressBox = document.getElementById('bulkAddProgress');
-    const progressText = document.getElementById('bulkAddProgressText');
-
-    btnRun.disabled = true;
-    progressBox.style.display = 'block';
-
-    let addedCount = 0;
-    let total = words.length;
-
-    for (let i = 0; i < total; i++) {
-        const en = words[i];
-        progressText.innerText = `${i + 1}/${total}`;
-
-        const details = await fetchWordDetails(en);
-        const mainRu = details ? details.mainRu : '';
-        const extraRu = details ? details.extraRu : '';
-
-        let tags = ['new'];
-        if (details && details.detectedPosList) {
-            details.detectedPosList.forEach(pos => {
-                if (!tags.includes(pos)) tags.push(pos);
-            });
-        }
-
-        const context = `1. I need to ${en} this right now. — Мне нужно ${mainRu || en} это прямо сейчас.`;
-
-        dictionary.unshift({
-            id: Date.now() + i,
-            en, mainRu, extraRu, context, tags
-        });
-
-        addedCount++;
-        await new Promise(r => setTimeout(r, 120));
-    }
-
-    btnRun.disabled = false;
-    progressBox.style.display = 'none';
-    closeBulkAddModal();
-
-    saveAndRender();
-    renderSingleTagFilter();
-    alert(`Успешно добавлено слов: ${addedCount}. Им присвоен тег #new!`);
-}
-
-async function bulkAutoTranslate() {
-    if (selectedWordIds.length === 0) return;
-
-    if (!confirm(`Вы действительно хотите обновить переводы и части речи для выбранных слов (${selectedWordIds.length} шт.)?`)) {
-        return;
-    }
-
-    const btn = document.getElementById('btnBulkAuto');
-    const originalText = btn.innerText;
-    btn.disabled = true;
-
-    let total = selectedWordIds.length;
-    let completed = 0;
-
-    for (let id of selectedWordIds) {
-        completed++;
-        btn.innerText = `⏳ ${completed}/${total}`;
-
-        const index = dictionary.findIndex(item => item.id === id);
-        if (index !== -1) {
-            const item = dictionary[index];
-            const details = await fetchWordDetails(item.en);
-
-            if (details) {
-                if (details.mainRu) item.mainRu = details.mainRu;
-                if (details.extraRu) item.extraRu = details.extraRu;
-
-                let tags = item.tags ? [...item.tags] : [];
-                details.detectedPosList.forEach(pos => {
-                    if (!tags.includes(pos)) tags.push(pos);
-                });
-                item.tags = tags;
-            }
-        }
-        await new Promise(r => setTimeout(r, 150));
-    }
-
-    btn.disabled = false;
-    btn.innerText = originalText;
-    saveAndRender();
-    alert(`Успешно обновлено слов: ${total}`);
-}
-
-// ==========================================
-// 6. ИИ ПРИМЕРЫ
-// ==========================================
+// Генерация ИИ примеров
 async function generateAIExamples() {
     const word = document.getElementById('englishWord').value.trim();
     if (!word) {
@@ -700,112 +587,7 @@ async function generateAIExamples() {
 }
 
 // ==========================================
-// 7. НАСТРОЙКА ВИДИМОСТИ И СОРТИРОВКИ
-// ==========================================
-function updateColumnCheckboxes() {
-    for (let key in columnVisibility) {
-        const cb = document.getElementById(`col_${key}`);
-        if (cb) cb.checked = columnVisibility[key];
-    }
-}
-
-function toggleColumnVisibility() {
-    for (let key in columnVisibility) {
-        const cb = document.getElementById(`col_${key}`);
-        if (cb) columnVisibility[key] = cb.checked;
-    }
-    localStorage.setItem('my_column_visibility', JSON.stringify(columnVisibility));
-    renderWords();
-}
-
-function toggleSecretText(el) {
-    el.classList.toggle('revealed');
-}
-
-function applyFilters() {
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('singleTagFilter');
-
-    activeSearchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    activeTagFilter = filterSelect ? filterSelect.value : '';
-
-    renderWords();
-}
-
-function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('singleTagFilter').value = '';
-    activeSearchQuery = '';
-    activeTagFilter = '';
-    renderWords();
-}
-
-function sortBy(column) {
-    if (currentSortColumn === column) {
-        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortColumn = column;
-        currentSortDirection = 'asc';
-    }
-    renderWords();
-}
-
-// ==========================================
-// 8. ОБНОВЛЕННЫЙ ФИЛЬТР ТЕГОВ (С КОЛИЧЕСТВОМ И СОРТИРОВКОЙ ПО КАТЕГОРИЯМ)
-// ==========================================
-function renderSingleTagFilter() {
-    const filterSelect = document.getElementById('singleTagFilter');
-    if (!filterSelect) return;
-    
-    const currentVal = filterSelect.value;
-    filterSelect.innerHTML = '<option value="">-- Все теги --</option>';
-
-    // 1. Подсчитываем количество слов для каждого тега
-    const tagCounts = {};
-    dictionary.forEach(item => {
-        if (item.tags && Array.isArray(item.tags)) {
-            item.tags.forEach(tag => {
-                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-            });
-        }
-    });
-
-    // 2. Собираем теги строго в порядке категорий (Категория 1 ➔ 2 ➔ 3 ➔ 4 ➔ 5)
-    let orderedTags = [];
-    categories.forEach(cat => {
-        if (cat.tags && Array.isArray(cat.tags)) {
-            cat.tags.forEach(tag => {
-                if (!orderedTags.includes(tag)) {
-                    orderedTags.push(tag);
-                }
-            });
-        }
-    });
-
-    // Добавляем теги, которые есть у слов, но отсутствуют в текущем списке категорий (кастомные теги)
-    Object.keys(tagCounts).forEach(tag => {
-        if (!orderedTags.includes(tag)) {
-            orderedTags.push(tag);
-        }
-    });
-
-    // 3. Заполняем выпадающий список <select>
-    orderedTags.forEach(tag => {
-        const count = tagCounts[tag] || 0;
-        const opt = document.createElement('option');
-        opt.value = tag;
-        opt.innerText = `#${tag} (${count})`;
-        
-        if (tag === currentVal) {
-            opt.selected = true;
-        }
-        
-        filterSelect.appendChild(opt);
-    });
-}
-
-// ==========================================
-// 9. СОХРАНЕНИЕ И РЕДАКТИРОВАНИЕ СЛОВ
+// 5. СОХРАНЕНИЕ И РЕДАКТИРОВАНИЕ СЛОВ
 // ==========================================
 function saveWord() {
     const idInput = document.getElementById('editWordId').value;
@@ -820,6 +602,7 @@ function saveWord() {
     }
 
     const numericId = idInput ? parseInt(idInput) : null;
+    let targetId = numericId;
 
     if (numericId) {
         dictionary = dictionary.map(item => {
@@ -828,20 +611,19 @@ function saveWord() {
             }
             return item;
         });
-    } else if (existingDuplicateId && duplicateMode === 'replace') {
-        dictionary = dictionary.map(item => {
-            if (item.id === existingDuplicateId) {
-                return { ...item, en, mainRu, extraRu, context, tags: [...selectedFormTags] };
-            }
-            return item;
-        });
     } else {
+        targetId = Date.now();
         dictionary.unshift({
-            id: Date.now(),
+            id: targetId,
             en, mainRu, extraRu, context,
-            tags: [...selectedFormTags]
+            tags: [...selectedFormTags],
+            createdAt: new Date().toISOString(),
+            reviewCount: 0,
+            errorCount: 0
         });
     }
+
+    lastEditedWordId = targetId; // 👈 Запоминаем ID сохраненного слова
 
     saveAndRender();
     resetForm();
@@ -857,6 +639,7 @@ function saveWord() {
 }
 
 function editWord(id) {
+    lastEditedWordId = id; // 👈 Запоминаем ID редактируемого слова
     const item = dictionary.find(w => w.id === id);
     if (!item) return;
 
@@ -876,13 +659,26 @@ function editWord(id) {
     document.getElementById('contextInput').value = item.context || '';
     selectedFormTags = item.tags ? [...item.tags] : [];
 
-    document.getElementById('formTitle').innerText = 'Редактировать слово';
-    document.getElementById('btnSubmit').innerText = 'Сохранить изменения';
-    document.getElementById('btnCancel').style.display = 'block';
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.innerText = 'Редактировать слово';
+    
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) btnSubmit.innerText = 'Сохранить изменения';
+    
+    const btnCancel = document.getElementById('btnCancel');
+    if (btnCancel) btnCancel.style.display = 'block';
     
     renderCategoriesUI();
     renderFormSelectedTags();
     if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteWord(id) {
+    if (confirm('Удалить слово?')) {
+        dictionary = dictionary.filter(item => item.id !== id);
+        saveAndRender();
+        resetForm();
+    }
 }
 
 function resetForm() {
@@ -905,25 +701,25 @@ function resetForm() {
     existingDuplicateId = null;
     selectedFormTags = [];
 
-    document.getElementById('formTitle').innerText = 'Добавить новое слово';
-    document.getElementById('btnSubmit').innerText = 'Добавить слово';
-    document.getElementById('btnCancel').style.display = 'none';
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.innerText = 'Добавить новое слово';
+    
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) btnSubmit.innerText = 'Добавить слово';
+    
+    const btnCancel = document.getElementById('btnCancel');
+    if (btnCancel) btnCancel.style.display = 'none';
     
     renderCategoriesUI();
     renderFormSelectedTags();
 }
 
-function deleteWord(id) {
-    if (confirm('Удалить слово?')) {
-        dictionary = dictionary.filter(item => item.id !== id);
-        saveAndRender();
-        resetForm();
-    }
-}
-
+// ==========================================
+// 6. ТАБЛИЦА И ФИЛЬТРЫ СЛОВАРЯ
+// ==========================================
 function getFilteredWords() {
     return dictionary.filter(item => {
-        const matchEn = item.en.toLowerCase().includes(activeSearchQuery);
+        const matchEn = (item.en || '').toLowerCase().includes(activeSearchQuery);
         const matchRuMain = (item.mainRu || item.ru || '').toLowerCase().includes(activeSearchQuery);
         const matchRuExtra = (item.extraRu || '').toLowerCase().includes(activeSearchQuery);
         const matchCtx = (item.context || '').toLowerCase().includes(activeSearchQuery);
@@ -979,43 +775,367 @@ function renderTableHeaders() {
     tr.innerHTML = html;
 }
 
-// ==========================================
-// ==========================================
-// БРИТАНСКАЯ ОЗВУЧКА (UK Accent en-GB)
-// ==========================================
-function speak(text, rate = 0.9) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-GB';
-    utterance.rate = rate;
-    
-    const voices = window.speechSynthesis.getVoices();
-    const ukVoice = voices.find(v => v.lang === 'en-GB' || v.lang.includes('GB') || v.lang.includes('en_GB'));
-    if (ukVoice) {
-        utterance.voice = ukVoice;
+function renderSingleTagFilter() {
+    const filterSelect = document.getElementById('singleTagFilter');
+    if (!filterSelect) return;
+    const currentVal = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">-- Все теги --</option>';
+
+    const tagCounts = {};
+    dictionary.forEach(item => {
+        if (item.tags && Array.isArray(item.tags)) {
+            item.tags.forEach(tag => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+        }
+    });
+
+    let orderedTags = [];
+    categories.forEach(cat => {
+        if (cat.tags && Array.isArray(cat.tags)) {
+            cat.tags.forEach(tag => {
+                if (!orderedTags.includes(tag)) orderedTags.push(tag);
+            });
+        }
+    });
+
+    Object.keys(tagCounts).forEach(tag => {
+        if (!orderedTags.includes(tag)) orderedTags.push(tag);
+    });
+
+    orderedTags.forEach(tag => {
+        const count = tagCounts[tag] || 0;
+        const opt = document.createElement('option');
+        opt.value = tag;
+        opt.innerText = `#${tag} (${count})`;
+        if (tag === currentVal) opt.selected = true;
+        filterSelect.appendChild(opt);
+    });
+}
+
+function applyFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('singleTagFilter');
+    activeSearchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    activeTagFilter = filterSelect ? filterSelect.value : '';
+    renderWords();
+}
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('singleTagFilter').value = '';
+    activeSearchQuery = '';
+    activeTagFilter = '';
+    renderWords();
+}
+
+function sortBy(column) {
+    if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
     }
-    
-    window.speechSynthesis.speak(utterance);
+    renderWords();
 }
 
-function speakRu(text) {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ru-RU';
-    window.speechSynthesis.speak(utterance);
+function toggleColumnVisibility() {
+    for (let key in columnVisibility) {
+        const cb = document.getElementById(`col_${key}`);
+        if (cb) columnVisibility[key] = cb.checked;
+    }
+    localStorage.setItem('my_column_visibility', JSON.stringify(columnVisibility));
+    renderWords();
+}
+
+function updateColumnCheckboxes() {
+    for (let key in columnVisibility) {
+        const cb = document.getElementById(`col_${key}`);
+        if (cb) cb.checked = columnVisibility[key];
+    }
+}
+
+function toggleSecretText(el) {
+    el.classList.toggle('revealed');
+}
+
+function updateBulkUI() {
+    const countLabel = document.getElementById('selectedCount');
+    const actionsBox = document.getElementById('bulkActionsBox');
+    if (countLabel) countLabel.innerText = selectedWordIds.length;
+    if (actionsBox) actionsBox.style.display = selectedWordIds.length > 0 ? 'flex' : 'none';
+}
+
+function toggleSelectWord(id) {
+    if (selectedWordIds.includes(id)) {
+        selectedWordIds = selectedWordIds.filter(i => i !== id);
+    } else {
+        selectedWordIds.push(id);
+    }
+    updateBulkUI();
+}
+
+function renderWords() {
+    const currentScrollY = window.scrollY;
+    renderTableHeaders();
+
+    const tbody = document.getElementById('dictTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const filtered = getFilteredWords();
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding: 20px;">Слов не найдено</td></tr>';
+        updateBulkUI();
+        return;
+    }
+
+    filtered.forEach(item => {
+        if (item.reviewCount === undefined) item.reviewCount = 0;
+        if (item.errorCount === undefined) item.errorCount = 0;
+
+        const isChecked = selectedWordIds.includes(item.id);
+        const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">#${t}</span>`).join('') : '';
+        const mainText = item.mainRu || item.ru || '';
+
+        const tr = document.createElement('tr');
+        tr.id = `word-row-${item.id}`;
+        
+        let rowHtml = `<td><input type="checkbox" class="word-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectWord(${item.id})"></td>`;
+
+        if (columnVisibility.en) {
+            rowHtml += `
+                <td>
+                    <strong>${item.en}</strong>
+                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
+                </td>
+            `;
+        } else {
+            rowHtml += `
+                <td>
+                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
+                        <strong>${item.en}</strong>
+                    </span>
+                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.mainRu) {
+            rowHtml += `<td style="color:#27ae60; font-weight:600;">${mainText}</td>`;
+        } else {
+            rowHtml += `
+                <td>
+                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
+                        <strong style="color:#27ae60;">${mainText}</strong>
+                    </span>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.extraRu) {
+            rowHtml += `<td style="color:#64748b;"><div class="cell-scrollable">${item.extraRu || ''}</div></td>`;
+        }
+
+        if (columnVisibility.context) {
+            rowHtml += `<td style="white-space:pre-line; color:#555;"><div class="cell-scrollable">${item.context || ''}</div></td>`;
+        }
+
+        if (columnVisibility.tags) {
+            rowHtml += `
+                <td>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                        <div class="tags">${tagsHtml}</div>
+                        <button type="button" class="btn-edit-cat" onclick="quickEditWordTags(${item.id})" title="Изменить теги">✏</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        if (columnVisibility.actions) {
+            rowHtml += `
+                <td>
+                    <div class="actions">
+                        <button class="btn-action btn-edit" onclick="editWord(${item.id})">✏</button>
+                        <button class="btn-action btn-delete" onclick="deleteWord(${item.id})">🗑️</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+    });
+
+    updateBulkUI();
+
+    window.scrollTo({
+        top: currentScrollY,
+        behavior: 'instant'
+    });
+
+    // 👈 Возврат к отредактированному слову и его мягкая подсветка
+    if (lastEditedWordId) {
+        const rowEl = document.getElementById(`word-row-${lastEditedWordId}`);
+        if (rowEl) {
+            rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            rowEl.style.transition = 'background-color 0.5s';
+            rowEl.style.backgroundColor = '#d1fae5'; // Зеленоватая подсветка
+            setTimeout(() => {
+                rowEl.style.backgroundColor = '';
+            }, 1500);
+        }
+        lastEditedWordId = null;
+    }
 }
 
 // ==========================================
-// 10. ИГРОВОЙ ДВИЖОК, СТАТИСТИКА И СМЕНА ТЕГОВ
+// 7. БЕЗОПАСНОСТЬ И ПАРОЛИ
+// ==========================================
+async function hashPassword(password) {
+    const msgUint8 = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function openChangePasswordModal() {
+    document.getElementById('oldPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('changePassError').style.display = 'none';
+    document.getElementById('changePassSuccess').style.display = 'none';
+    document.getElementById('changePasswordModal').style.display = 'flex';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+async function submitChangePassword() {
+    const oldPass = document.getElementById('oldPasswordInput').value.trim();
+    const newPass = document.getElementById('newPasswordInput').value.trim();
+    const errEl = document.getElementById('changePassError');
+    const succEl = document.getElementById('changePassSuccess');
+
+    errEl.style.display = 'none';
+    succEl.style.display = 'none';
+
+    if (!oldPass || !newPass) {
+        errEl.innerText = 'Заполните оба поля!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    if (newPass.length < 4) {
+        errEl.innerText = 'Новый пароль слишком короткий (минимум 4 символа)!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    if (!currentUser) return;
+
+    const oldPassHash = await hashPassword(oldPass);
+    const userRef = db.ref(`users_db/${currentUser}`);
+    const snapshot = await userRef.once('value');
+    const userData = snapshot.val();
+
+    if (!userData || userData.password !== oldPassHash) {
+        errEl.innerText = 'Неверный старый пароль!';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    const newPassHash = await hashPassword(newPass);
+    await userRef.update({ password: newPassHash });
+
+    succEl.innerText = 'Пароль успешно изменен!';
+    succEl.style.display = 'block';
+
+    setTimeout(() => {
+        closeChangePasswordModal();
+    }, 1500);
+}
+
+// ==========================================
+// 8. ВЫПАДАЮЩИЙ СПИСОК ЧЕКБОКСОВ СЛОВ
+// ==========================================
+function toggleWordChecklistDropdown() {
+    const box = document.getElementById('wordChecklistDropdown');
+    if (!box) return;
+    const isHidden = box.style.display === 'none' || box.style.display === '';
+    box.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) renderWordChecklistUI();
+}
+
+function renderWordChecklistUI() {
+    const container = document.getElementById('wordChecklistContainer');
+    const tagFilterEl = document.getElementById('gameTagFilter');
+    const tagFilter = tagFilterEl ? tagFilterEl.value : 'all';
+    
+    if (!container) return;
+
+    let pool = (tagFilter === 'all') 
+        ? [...dictionary] 
+        : dictionary.filter(w => w.tags && w.tags.includes(tagFilter));
+
+    if (pool.length === 0) {
+        container.innerHTML = '<em style="color:#888; font-size:12px;">Нет слов по выбранному тегу</em>';
+        updateSelectedChecklistCount();
+        return;
+    }
+
+    if (!window.activeChecklistIds) {
+        window.activeChecklistIds = pool.map(w => w.id);
+    }
+
+    let html = '';
+    pool.forEach(word => {
+        const isChecked = window.activeChecklistIds.includes(word.id);
+        html += `
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <input type="checkbox" class="trainer-word-checkbox" value="${word.id}" ${isChecked ? 'checked' : ''} onchange="updateSelectedChecklistCount()">
+                <strong>${word.en}</strong> — <span style="color: #27ae60;">${word.mainRu || word.ru || ''}</span>
+            </label>
+        `;
+    });
+
+    container.innerHTML = html;
+    updateSelectedChecklistCount();
+}
+
+function setAllChecklistWords(select) {
+    document.querySelectorAll('.trainer-word-checkbox').forEach(cb => {
+        cb.checked = select;
+    });
+    updateSelectedChecklistCount();
+}
+
+function updateSelectedChecklistCount() {
+    const checkboxes = document.querySelectorAll('.trainer-word-checkbox');
+    let selectedCount = 0;
+    window.activeChecklistIds = [];
+
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            selectedCount++;
+            window.activeChecklistIds.push(parseInt(cb.value));
+        }
+    });
+
+    const label = document.getElementById('selectedWordsCountLabel');
+    if (label) {
+        label.innerText = `${selectedCount} из ${checkboxes.length}`;
+    }
+}
+
+// ==========================================
+// 9. ИГРОВОЙ ДВИЖОК И РЕЖИМЫ ТРЕНИРОВОК
 // ==========================================
 let activeGame = {
     mode: '', words: [], currentIndex: 0, direction: 'both',
     errors: [], correctWords: [], tagFilter: '', selectedLeft: null, selectedRight: null, matchedCount: 0
 };
-
-let gameHistory = [];
 
 function populateGameTagFilters() {
     const select = document.getElementById('gameTagFilter');
@@ -1051,12 +1171,20 @@ function startGame(mode) {
     const sizeVal = document.getElementById('gameSizeSelect').value;
     const direction = document.getElementById('gameDirection').value;
 
+    localStorage.setItem('my_dict_last_tag', tagFilter);
+    localStorage.setItem('my_dict_last_size', sizeVal);
+    localStorage.setItem('my_dict_last_dir', direction);
+
     let pool = (tagFilter === 'all') 
         ? [...dictionary] 
         : dictionary.filter(w => w.tags && w.tags.includes(tagFilter));
 
+    if (window.activeChecklistIds && window.activeChecklistIds.length > 0) {
+        pool = pool.filter(w => window.activeChecklistIds.includes(w.id));
+    }
+
     if (pool.length === 0) {
-        alert('Нет слов, соответствующих выбранному тегу!');
+        alert('Нет слов, соответствующих выбранному тегу или чекбоксам!');
         return;
     }
 
@@ -1097,7 +1225,7 @@ function startGame(mode) {
 }
 
 function exitGame() {
-    if (audioStreamTimer) clearTimeout(audioStreamTimer);
+    if (window.audioStreamTimeoutId) clearTimeout(window.audioStreamTimeoutId);
     window.speechSynthesis.cancel();
     
     const setupCard = document.getElementById('gameSetupCard');
@@ -1139,11 +1267,8 @@ function renderGameStep() {
     }
 }
 
-// ------------------------------------------
-// ФЛЕШ-КАРТОЧКИ
-// ------------------------------------------
+// 1. Флеш-карточки
 let isCardFlipped = false;
-
 function renderFlashcardsMode() {
     const container = document.getElementById('activeGameContainer');
     const item = activeGame.words[activeGame.currentIndex];
@@ -1162,7 +1287,6 @@ function renderFlashcardsMode() {
                 ${item.context ? `<div class="context" style="margin-top: 10px; font-size: 13px; color: #555;">💡 ${item.context}</div>` : ''}
             </div>
         </div>
-
         <div class="trainer-controls">
             <button class="btn-dontknow" onclick="nextGameCard(false)">❌ Не знаю</button>
             <button class="btn-know" onclick="nextGameCard(true)">✅ Знаю</button>
@@ -1181,21 +1305,15 @@ function flipGameCard() {
 function nextGameCard(known) {
     const currentItem = activeGame.words[activeGame.currentIndex];
     if (known) {
-        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) {
-            activeGame.correctWords.push(currentItem);
-        }
+        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) activeGame.correctWords.push(currentItem);
     } else {
-        if (!activeGame.errors.some(w => w.id === currentItem.id)) {
-            activeGame.errors.push(currentItem);
-        }
+        if (!activeGame.errors.some(w => w.id === currentItem.id)) activeGame.errors.push(currentItem);
     }
     activeGame.currentIndex++;
     renderGameStep();
 }
 
-// ------------------------------------------
-// ПИСЬМЕННЫЙ ПЕРЕВОД
-// ------------------------------------------
+// 2. Письменный перевод (с проверкой основных и доп. переводов)
 function renderWrittenMode() {
     const container = document.getElementById('activeGameContainer');
     const item = activeGame.words[activeGame.currentIndex];
@@ -1206,7 +1324,6 @@ function renderWrittenMode() {
     else isEnToRu = Math.random() > 0.5;
 
     const promptText = isEnToRu ? item.en : (item.mainRu || item.ru || '');
-    const targetText = isEnToRu ? (item.mainRu || item.ru || '') : item.en;
     const label = isEnToRu ? 'Переведите на русский:' : 'Переведите на английский:';
 
     container.innerHTML = `
@@ -1216,10 +1333,8 @@ function renderWrittenMode() {
                 ${promptText}
                 ${isEnToRu ? `<button class="btn-audio" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>` : ''}
             </div>
-
             <input type="text" id="gameWrittenInput" placeholder="Введите перевод..." style="text-align: center; font-size: 18px; padding: 12px; margin-bottom: 12px;" autocomplete="off">
-            <button class="btn-main" onclick="checkWrittenGameAnswer('${targetText.replace(/'/g, "\\'")}', ${item.id})">Проверить</button>
-
+            <button class="btn-main" onclick="checkWrittenGameAnswer(${item.id})">Проверить</button>
             <div id="gameWrittenFeedback" style="display: none; margin-top: 15px; padding: 10px; border-radius: 8px; font-weight: bold;"></div>
         </div>
     `;
@@ -1228,41 +1343,44 @@ function renderWrittenMode() {
     if (input) {
         input.focus();
         input.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') checkWrittenGameAnswer(targetText, item.id);
+            if (e.key === 'Enter') checkWrittenGameAnswer(item.id);
         });
     }
 }
 
-function checkWrittenGameAnswer(correctText, wordId) {
+function checkWrittenGameAnswer(wordId) {
     const input = document.getElementById('gameWrittenInput');
     const feedback = document.getElementById('gameWrittenFeedback');
     if (!input || !feedback) return;
 
     const userVal = input.value.trim().toLowerCase();
-    const correctVal = correctText.trim().toLowerCase();
-
     if (!userVal) return;
 
-    const currentItem = activeGame.words[activeGame.currentIndex];
+    const currentItem = activeGame.words.find(w => w.id === wordId);
+    if (!currentItem) return;
 
-    if (userVal === correctVal) {
+    const correctEn = (currentItem.en || '').trim().toLowerCase();
+    const correctMainRu = (currentItem.mainRu || currentItem.ru || '').trim().toLowerCase();
+    let extraRuList = [];
+    if (currentItem.extraRu) {
+        extraRuList = currentItem.extraRu.split(',').map(s => s.trim().toLowerCase());
+    }
+
+    const allowedAnswers = [correctEn, correctMainRu, ...extraRuList].filter(ans => ans.length > 0);
+    const isCorrect = allowedAnswers.some(ans => userVal === ans);
+
+    if (isCorrect) {
         feedback.style.background = '#d1fae5';
         feedback.style.color = '#065f46';
         feedback.innerText = '✨ Отлично! Правильно!';
         feedback.style.display = 'block';
-
-        if (!activeGame.correctWords.some(w => w.id === wordId)) {
-            activeGame.correctWords.push(currentItem);
-        }
+        if (!activeGame.correctWords.some(w => w.id === wordId)) activeGame.correctWords.push(currentItem);
     } else {
         feedback.style.background = '#fee2e2';
         feedback.style.color = '#991b1b';
-        feedback.innerText = `❌ Ошибка. Правильный ответ: "${correctText}"`;
+        feedback.innerText = `❌ Ошибка. Правильный ответ: "${currentItem.mainRu || currentItem.ru}" (или синонимы)`;
         feedback.style.display = 'block';
-
-        if (!activeGame.errors.some(w => w.id === wordId)) {
-            activeGame.errors.push(currentItem);
-        }
+        if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
     }
 
     setTimeout(() => {
@@ -1271,11 +1389,10 @@ function checkWrittenGameAnswer(correctText, wordId) {
     }, 1200);
 }
 
-// ------------------------------------------
-// СОПОСТАВЛЕНИЕ ПАР
-// ------------------------------------------
+// 3. Сопоставление пар
 function renderMatchingMode() {
     const container = document.getElementById('activeGameContainer');
+    if (!container) return;
     const words = activeGame.words;
 
     const leftList = [...words].sort(() => Math.random() - 0.5);
@@ -1293,14 +1410,12 @@ function renderMatchingMode() {
         html += `<button class="matching-btn" data-type="ru" data-id="${w.id}" onclick="handleMatchingGameClick(this)">${w.mainRu || w.ru || ''}</button>`;
     });
     html += '</div>';
-
     html += '</div>';
     container.innerHTML = html;
 }
 
 function handleMatchingGameClick(btn) {
     if (btn.classList.contains('correct')) return;
-
     const type = btn.getAttribute('data-type');
 
     if (type === 'en') {
@@ -1316,7 +1431,6 @@ function handleMatchingGameClick(btn) {
     if (activeGame.selectedLeft && activeGame.selectedRight) {
         const idLeft = parseInt(activeGame.selectedLeft.getAttribute('data-id'));
         const idRight = parseInt(activeGame.selectedRight.getAttribute('data-id'));
-
         const wordObj = activeGame.words.find(w => w.id === idLeft);
 
         if (idLeft === idRight) {
@@ -1326,10 +1440,8 @@ function handleMatchingGameClick(btn) {
             activeGame.selectedRight = null;
             activeGame.matchedCount++;
 
-            if (wordObj && !activeGame.errors.some(w => w.id === idLeft)) {
-                if (!activeGame.correctWords.some(w => w.id === idLeft)) {
-                    activeGame.correctWords.push(wordObj);
-                }
+            if (wordObj && !activeGame.correctWords.some(w => w.id === idLeft)) {
+                activeGame.correctWords.push(wordObj);
             }
 
             if (activeGame.matchedCount === activeGame.words.length) {
@@ -1338,7 +1450,6 @@ function handleMatchingGameClick(btn) {
         } else {
             const btn1 = activeGame.selectedLeft;
             const btn2 = activeGame.selectedRight;
-
             btn1.classList.add('wrong');
             btn2.classList.add('wrong');
 
@@ -1346,8 +1457,6 @@ function handleMatchingGameClick(btn) {
                 activeGame.errors.push(wordObj);
                 activeGame.correctWords = activeGame.correctWords.filter(w => w.id !== idLeft);
             }
-
-            if (navigator.vibrate) navigator.vibrate(200);
 
             setTimeout(() => {
                 btn1.classList.remove('selected', 'wrong');
@@ -1360,41 +1469,22 @@ function handleMatchingGameClick(btn) {
     }
 }
 
-// ==========================================
-// УРОК 1: АУДИО-ПОГРУЖЕНИЕ (Фоновый режим с паузами и циклами)
-// ==========================================
-let audioStreamState = {
-    isRunning: false,
-    timeoutId: null,
-    totalLoops: 5,   // Количество кругов по списку
-    currentLoop: 1,
-    wordIndex: 0
-};
-
+// 4. Аудио-погружение
+let audioStreamState = { isRunning: false, timeoutId: null, totalLoops: 5, currentLoop: 1, wordIndex: 0 };
 function renderAudioStreamMode() {
     const container = document.getElementById('activeGameContainer');
+    if (!container) return;
     
     container.innerHTML = `
         <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 30px;">
-            <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎧 Аудио-погружение (Фоновый режим)</div>
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎧 Аудио-погружение</div>
             <div id="audioStreamLoopInfo" style="font-size: 12px; font-weight: bold; color: #0284c7; margin-bottom: 15px;">Круг 1 из 5</div>
-            
             <div id="audioStreamWordEn" style="font-size: 32px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">—</div>
             <div id="audioStreamWordRu" style="font-size: 20px; color: #10b981; margin-bottom: 20px;">—</div>
-            
             <div id="audioStatusText" style="font-size: 14px; color: #64748b; font-weight: bold; margin-bottom: 25px;">Подготовка...</div>
-
-            <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-                <button id="audioPlayPauseBtn" class="btn-main" style="background: #e11d48; max-width: 200px;" onclick="toggleAudioStreamPause()">⏸ Пауза</button>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                <button type="button" class="btn-action" style="background: #ef4444;" onclick="markAudioWordFromStream(false)">❌ Учу</button>
-                <button type="button" class="btn-action" style="background: #10b981;" onclick="markAudioWordFromStream(true)">✅ Знаю</button>
-            </div>
+            <button id="audioPlayPauseBtn" class="btn-main" style="background: #e11d48; max-width: 200px; margin: 0 auto;" onclick="toggleAudioStreamPause()">⏸ Пауза</button>
         </div>
     `;
-
     startAudioStreamSession();
 }
 
@@ -1407,19 +1497,14 @@ function startAudioStreamSession() {
 
 function playNextAudioStreamWord() {
     if (!audioStreamState.isRunning) return;
-
-    // Проверяем, не закончились ли круги
     if (audioStreamState.currentLoop > audioStreamState.totalLoops) {
         document.getElementById('audioStatusText').innerText = '🎉 Все круги прослушаны!';
-        document.getElementById('audioStreamWordEn').innerText = 'Готово!';
-        document.getElementById('audioStreamWordRu').innerText = 'Отличная работа';
         return;
     }
 
     const words = activeGame.words;
     if (!words || words.length === 0) return;
 
-    // Если дошли до конца списка — переходим на следующий круг
     if (audioStreamState.wordIndex >= words.length) {
         audioStreamState.wordIndex = 0;
         audioStreamState.currentLoop++;
@@ -1431,134 +1516,59 @@ function playNextAudioStreamWord() {
     }
 
     const item = words[audioStreamState.wordIndex];
-    
-    // Обновляем текст на экране
-    const enEl = document.getElementById('audioStreamWordEn');
-    const ruEl = document.getElementById('audioStreamWordRu');
-    const statusEl = document.getElementById('audioStatusText');
-    const loopEl = document.getElementById('audioStreamLoopInfo');
+    document.getElementById('audioStreamWordEn').innerText = item.en;
+    document.getElementById('audioStreamWordRu').innerText = item.mainRu || item.ru || '';
+    document.getElementById('audioStreamLoopInfo').innerText = `Круг ${audioStreamState.currentLoop} из ${audioStreamState.totalLoops}`;
 
-    if (enEl) enEl.innerText = item.en;
-    if (ruEl) ruEl.innerText = item.mainRu || item.ru || '';
-    if (loopEl) loopEl.innerText = `Круг ${audioStreamState.currentLoop} из ${audioStreamState.totalLoops} (Слово ${audioStreamState.wordIndex + 1} из ${words.length})`;
-
-    // ЦИКЛ ОЗВУЧКИ ОДНОГО СЛОВА С ПАУЗАМИ В 2 СЕКУНДЫ:
-    // 1. Британский вариант (EN)
-    if (statusEl) statusEl.innerText = '🇬🇧 ' + item.en;
     speak(item.en);
-
-    // Пауза 2 секунды перед русским переводом
     audioStreamState.timeoutId = setTimeout(() => {
         if (!audioStreamState.isRunning) return;
-
-        // 2. Русский перевод (RU)
-        if (statusEl) statusEl.innerText = '🇷🇺 ' + (item.mainRu || item.ru);
         speakRu(item.mainRu || item.ru);
-
-        // Пауза 2 секунды перед повторами
         audioStreamState.timeoutId = setTimeout(() => {
             if (!audioStreamState.isRunning) return;
-
-            // 3. Первый повтор EN
-            if (statusEl) statusEl.innerText = '🇬🇧 (повтор 1) ' + item.en;
             speak(item.en);
-
-            // Пауза 2 секунды
             audioStreamState.timeoutId = setTimeout(() => {
                 if (!audioStreamState.isRunning) return;
-
-                // 4. Второй повтор EN
-                if (statusEl) statusEl.innerText = '🇬🇧 (повтор 2) ' + item.en;
-                speak(item.en);
-
-                // Пауза 2-3 секунды перед переходом к следующему слову, чтобы слова не сливались
-                audioStreamState.timeoutId = setTimeout(() => {
-                    if (!audioStreamState.isRunning) return;
-                    audioStreamState.wordIndex++;
-                    playNextAudioStreamWord();
-                }, 2500);
-
-            }, 2000);
-
+                audioStreamState.wordIndex++;
+                playNextAudioStreamWord();
+            }, 2500);
         }, 2000);
-
     }, 2000);
 }
 
 function toggleAudioStreamPause() {
     audioStreamState.isRunning = !audioStreamState.isRunning;
     const btn = document.getElementById('audioPlayPauseBtn');
-    const statusEl = document.getElementById('audioStatusText');
-
     if (audioStreamState.isRunning) {
-        if (btn) {
-            btn.innerText = '⏸ Пауза';
-            btn.style.background = '#e11d48';
-        }
+        btn.innerText = '⏸ Пауза';
         playNextAudioStreamWord();
     } else {
-        if (btn) {
-            btn.innerText = '▶ Продолжить';
-            btn.style.background = '#10b981';
-        }
-        if (audioStreamState.timeoutId) clearTimeout(audioStreamState.timeoutId);
+        btn.innerText = '▶ Продолжить';
+        clearTimeout(audioStreamState.timeoutId);
         window.speechSynthesis.cancel();
-        if (statusEl) statusEl.innerText = '⏸ На паузе';
     }
 }
 
-function markAudioWordFromStream(known) {
-    const item = activeGame.words[audioStreamState.wordIndex];
-    if (!item) return;
-
-    if (known) {
-        if (!activeGame.correctWords.some(w => w.id === item.id)) activeGame.correctWords.push(item);
-    } else {
-        if (!activeGame.errors.some(w => w.id === item.id)) activeGame.errors.push(item);
-    }
-}
-
-// Переопределяем функцию выхода, чтобы гасить таймеры фонового режима
-function exitGame() {
-    audioStreamState.isRunning = false;
-    if (audioStreamState.timeoutId) clearTimeout(audioStreamState.timeoutId);
-    window.speechSynthesis.cancel();
-    
-    const setupCard = document.getElementById('gameSetupCard');
-    const playArea = document.getElementById('gamePlayArea');
-    if (setupCard) setupCard.style.display = 'block';
-    if (playArea) playArea.style.display = 'none';
-}
-
-// ------------------------------------------
-// УРОК 2: АУДИО-ДИКТАНТ
-// ------------------------------------------
+// 5. Аудио-диктант
 function renderAudioDictationMode() {
     const container = document.getElementById('activeGameContainer');
     const item = activeGame.words[activeGame.currentIndex];
 
     container.innerHTML = `
         <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 25px;">
-            <div style="font-size: 13px; color: #64748b; margin-bottom: 10px;">🔊 Аудио-диктант (Слушайте и пишите)</div>
-            
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 10px;">🔊 Аудио-диктант</div>
             <button class="btn-main" style="font-size: 24px; padding: 15px; border-radius: 50px; width: 80px; height: 80px; margin: 15px auto;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
-            <div style="font-size: 12px; color: #0284c7; margin-bottom: 15px; cursor: pointer;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">Нажмите, чтобы прослушать повторно</div>
-
-            <input type="text" id="audioDictInput" placeholder="Введите перевод на русском..." style="text-align: center; font-size: 18px; padding: 12px; margin-bottom: 12px;" autocomplete="off">
+            <input type="text" id="audioDictInput" placeholder="Введите перевод или слово..." style="text-align: center; font-size: 18px; padding: 12px; margin-bottom: 12px;" autocomplete="off">
             <button class="btn-main" onclick="checkAudioDictAnswer(${item.id})">Проверить</button>
-
             <div id="audioDictFeedback" style="display: none; margin-top: 15px; padding: 10px; border-radius: 8px; font-weight: bold;"></div>
         </div>
     `;
 
     setTimeout(() => speak(item.en), 300);
-
     const input = document.getElementById('audioDictInput');
     if (input) {
         input.focus();
-        input.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') checkAudioDictAnswer(item.id);
-        });
+        input.addEventListener('keyup', (e) => { if (e.key === 'Enter') checkAudioDictAnswer(item.id); });
     }
 }
 
@@ -1569,23 +1579,26 @@ function checkAudioDictAnswer(wordId) {
 
     const userVal = input.value.trim().toLowerCase();
     const currentItem = activeGame.words.find(w => w.id === wordId);
-    const correctVal = (currentItem.mainRu || currentItem.ru || '').trim().toLowerCase();
+    if (!currentItem || !userVal) return;
 
-    if (!userVal) return;
+    const correctEn = (currentItem.en || '').trim().toLowerCase();
+    const correctMainRu = (currentItem.mainRu || currentItem.ru || '').trim().toLowerCase();
+    let extraRuList = currentItem.extraRu ? currentItem.extraRu.split(',').map(s => s.trim().toLowerCase()) : [];
 
-    if (userVal === correctVal) {
+    const allowedAnswers = [correctEn, correctMainRu, ...extraRuList].filter(ans => ans.length > 0);
+    const isCorrect = allowedAnswers.some(ans => userVal === ans);
+
+    if (isCorrect) {
         feedback.style.background = '#d1fae5';
         feedback.style.color = '#065f46';
         feedback.innerText = '✨ Верно!';
         feedback.style.display = 'block';
-
         if (!activeGame.correctWords.some(w => w.id === wordId)) activeGame.correctWords.push(currentItem);
     } else {
         feedback.style.background = '#fee2e2';
         feedback.style.color = '#991b1b';
-        feedback.innerText = `❌ Ошибка. Правильно: "${currentItem.mainRu || currentItem.ru}" (Слово: ${currentItem.en})`;
+        feedback.innerText = `❌ Ошибка. Верно: "${currentItem.mainRu || currentItem.ru}"`;
         feedback.style.display = 'block';
-
         if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
     }
 
@@ -1595,11 +1608,10 @@ function checkAudioDictAnswer(wordId) {
     }, 1400);
 }
 
-// ------------------------------------------
-// УРОК 3: ПРОИЗНОШЕНИЕ (Микрофон UK)
-// ------------------------------------------
+// 6. Произношение (Микрофон)
 function renderVoiceCheckMode() {
     const container = document.getElementById('activeGameContainer');
+    if (!container) return;
     const item = activeGame.words[activeGame.currentIndex];
 
     container.innerHTML = `
@@ -1607,35 +1619,29 @@ function renderVoiceCheckMode() {
             <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎙️ Произношение (UK Accent)</div>
             <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin: 10px 0;">${item.en}</div>
             <div style="font-size: 16px; color: #10b981; margin-bottom: 15px;">${item.mainRu || item.ru}</div>
-
             <button class="btn-main" style="background: #0284c7; max-width: 200px; margin-bottom: 15px;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊 Слушать эталон</button>
-            
             <div style="margin: 15px 0;">
                 <button id="micBtn" class="btn-main" style="background: #ef4444; font-size: 20px; padding: 15px 25px; border-radius: 50px;" onclick="startVoiceRecognition('${item.en.replace(/'/g, "\\'")}', ${item.id})">🎙️ Говорите...</button>
             </div>
-
             <div id="voiceResultBox" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 14px;">
                 <div>Вы сказали: <strong id="recognizedText" style="color: #0284c7;">—</strong></div>
                 <div style="margin-top: 6px; font-weight: bold;" id="matchScoreText">—</div>
             </div>
-
             <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-                <button type="button" class="btn-action" style="background: #64748b;" onclick="nextVoiceStep(false)">❌ Пропустить / Ошибка</button>
+                <button type="button" class="btn-action" style="background: #64748b;" onclick="nextVoiceStep(false)">❌ Ошибка</button>
                 <button type="button" class="btn-action" style="background: #10b981;" onclick="nextVoiceStep(true)">✅ Засчитать</button>
             </div>
         </div>
     `;
-
     setTimeout(() => speak(item.en), 300);
 }
 
 function startVoiceRecognition(targetWord, wordId) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert('Ваш браузер не поддерживает распознавание речи. Попробуйте Google Chrome.');
+        alert('Браузер не поддерживает распознавание речи. Используйте Google Chrome.');
         return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-GB';
     recognition.interimResults = false;
@@ -1653,26 +1659,14 @@ function startVoiceRecognition(targetWord, wordId) {
             micBtn.innerText = '🎙️ Сказать снова';
             micBtn.style.background = '#ef4444';
         }
-
         const cleanTarget = targetWord.toLowerCase().replace(/[^a-z\s]/g, '');
         const cleanSpoken = speechResult.replace(/[^a-z\s]/g, '');
-
-        let matchPercent = 0;
-        if (cleanSpoken === cleanTarget) {
-            matchPercent = 100;
-        } else if (cleanSpoken.includes(cleanTarget) || cleanTarget.includes(cleanSpoken)) {
-            matchPercent = 80;
-        } else {
-            matchPercent = 30;
-        }
+        let matchPercent = (cleanSpoken === cleanTarget) ? 100 : (cleanSpoken.includes(cleanTarget) ? 80 : 30);
 
         const resBox = document.getElementById('voiceResultBox');
-        const recTextEl = document.getElementById('recognizedText');
-        const scoreEl = document.getElementById('matchScoreText');
-
         if (resBox) resBox.style.display = 'block';
-        if (recTextEl) recTextEl.innerText = `"${speechResult}"`;
-        if (scoreEl) scoreEl.innerHTML = `Совпадение: <span style="color: ${matchPercent >= 80 ? '#10b981' : '#f59e0b'};">${matchPercent}%</span>`;
+        document.getElementById('recognizedText').innerText = `"${speechResult}"`;
+        document.getElementById('matchScoreText').innerHTML = `Совпадение: <span style="color: ${matchPercent >= 80 ? '#10b981' : '#f59e0b'};">${matchPercent}%</span>`;
 
         const currentItem = activeGame.words.find(w => w.id === wordId);
         if (matchPercent >= 80) {
@@ -1681,14 +1675,6 @@ function startVoiceRecognition(targetWord, wordId) {
             if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
         }
     };
-
-    recognition.onerror = () => {
-        if (micBtn) {
-            micBtn.innerText = '🎙️ Ошибка. Повторить';
-            micBtn.style.background = '#ef4444';
-        }
-    };
-
     recognition.start();
 }
 
@@ -1703,59 +1689,32 @@ function nextVoiceStep(passed) {
     renderGameStep();
 }
 
-// ------------------------------------------
-// ИТОГИ И СТАТИСТИКА ИГР
-// ------------------------------------------
+// Итоги тренировки (сначала ошибки, потом правильные с кнопками тегов)
 function showGameSummary() {
     const container = document.getElementById('activeGameContainer');
     if (!container) return;
-
-    const progFill = document.getElementById('gameProgressFill');
-    const progText = document.getElementById('gameProgressText');
-    if (progFill) progFill.style.width = '100%';
-    if (progText) progText.innerText = 'Завершено!';
 
     const total = activeGame.words.length;
     const errorsCount = activeGame.errors.length;
     const correctCount = total - errorsCount;
     const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
 
-    saveGameHistoryEntry({
-        date: new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
-        mode: getModeTitle(activeGame.mode),
-        tag: activeGame.tagFilter,
-        total,
-        correctCount,
-        errorsCount,
-        percentage
-    });
-
     let html = `
         <div class="card" style="padding: 20px;">
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2 style="color: #2c3e50; margin-bottom: 6px;">🎉 Тренировка окончена!</h2>
-                <div style="font-size: 32px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : '#f59e0b'};">
-                    Результат: ${percentage}%
-                </div>
-                <p style="color: #64748b; font-size: 14px; margin-top: 4px;">
-                    Всего слов: <strong>${total}</strong> | Угадано: <strong style="color:#10b981;">${correctCount}</strong> | Ошибок: <strong style="color:#ef4444;">${errorsCount}</strong>
-                </p>
+                <div style="font-size: 32px; font-weight: bold; color: ${percentage >= 80 ? '#10b981' : '#f59e0b'};">Результат: ${percentage}%</div>
+                <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Всего: <strong>${total}</strong> | Угадано: <strong style="color:#10b981;">${correctCount}</strong> | Ошибок: <strong style="color:#ef4444;">${errorsCount}</strong></p>
             </div>
     `;
 
     if (activeGame.errors.length > 0) {
-        html += `<div style="margin-bottom: 20px;">
-            <h4 style="color: #ef4444; margin-bottom: 8px;">❌ Ошибки / Неугаданные слова (${activeGame.errors.length}):</h4>
-            <div style="display: flex; flex-direction: column; gap: 6px;">`;
-
+        html += `<div style="margin-bottom: 20px;"><h4 style="color: #ef4444; margin-bottom: 8px;">❌ Ошибки (${activeGame.errors.length}):</h4><div style="display: flex; flex-direction: column; gap: 6px;">`;
         activeGame.errors.forEach(item => {
             const currentTags = item.tags ? item.tags.map(t => `#${t}`).join(' ') : 'нет тегов';
             html += `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: #fee2e2; border: 1px solid #fca5a5; padding: 8px 12px; border-radius: 8px; font-size: 13px;">
-                    <div>
-                        <strong style="color: #991b1b;">${item.en}</strong> — ${item.mainRu || item.ru} 
-                        <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span>
-                    </div>
+                    <div><strong style="color: #991b1b;">${item.en}</strong> — ${item.mainRu || item.ru} <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span></div>
                     <button type="button" class="btn-action" style="background:#0284c7; padding: 4px 8px; font-size: 11px;" onclick="quickEditWordTags(${item.id})">✏ теги</button>
                 </div>`;
         });
@@ -1763,18 +1722,12 @@ function showGameSummary() {
     }
 
     if (activeGame.correctWords.length > 0) {
-        html += `<div>
-            <h4 style="color: #10b981; margin-bottom: 8px;">✅ Правильные слова (${activeGame.correctWords.length}):</h4>
-            <div style="display: flex; flex-direction: column; gap: 6px;">`;
-
+        html += `<div style="margin-bottom: 20px;"><h4 style="color: #10b981; margin-bottom: 8px;">✅ Правильные слова (${activeGame.correctWords.length}):</h4><div style="display: flex; flex-direction: column; gap: 6px;">`;
         activeGame.correctWords.forEach(item => {
             const currentTags = item.tags ? item.tags.map(t => `#${t}`).join(' ') : 'нет тегов';
             html += `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: #d1fae5; border: 1px solid #6ee7b7; padding: 8px 12px; border-radius: 8px; font-size: 13px;">
-                    <div>
-                        <strong style="color: #065f46;">${item.en}</strong> — ${item.mainRu || item.ru} 
-                        <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span>
-                    </div>
+                    <div><strong style="color: #065f46;">${item.en}</strong> — ${item.mainRu || item.ru} <span style="color: #64748b; font-size: 11px; margin-left: 8px;">(${currentTags})</span></div>
                     <button type="button" class="btn-action" style="background:#0284c7; padding: 4px 8px; font-size: 11px;" onclick="quickEditWordTags(${item.id})">✏ теги</button>
                 </div>`;
         });
@@ -1782,72 +1735,29 @@ function showGameSummary() {
     }
 
     html += `
-        <div style="margin-top: 25px; text-align: center;">
-            <button class="btn-main" style="max-width: 250px;" onclick="exitGame()">К настройкам</button>
+        <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn-main" style="max-width: 200px; background: #10b981;" onclick="restartCurrentGame()">🔄 Повторить</button>
+            <button class="btn-main" style="max-width: 200px; background: #64748b;" onclick="exitGame()">К настройкам</button>
         </div>
     </div>`;
-
     container.innerHTML = html;
 }
 
-function getModeTitle(mode) {
-    if (mode === 'flashcards') return '🃏 Флеш-карточки';
-    if (mode === 'written') return '✍️ Письменный';
-    if (mode === 'matching') return '🧩 Пары';
-    if (mode === 'audio_stream') return '🎧 Аудио-погружение';
-    if (mode === 'audio_dictation') return '🔊 Аудио-диктант';
-    if (mode === 'voice_check') return '🎙️ Произношение (UK)';
-    return mode;
+function restartCurrentGame() {
+    if (!activeGame.words || activeGame.words.length === 0) { exitGame(); return; }
+    const mode = activeGame.mode;
+    const words = [...activeGame.words];
+    const direction = activeGame.direction;
+    const tagFilter = activeGame.tagFilter;
+    activeGame = { mode, words, currentIndex: 0, direction, errors: [], correctWords: [], tagFilter, selectedLeft: null, selectedRight: null, matchedCount: 0 };
+    renderGameStep();
 }
 
-function saveGameHistoryEntry(entry) {
-    if (!currentUser) return;
-    const newHistory = [entry, ...gameHistory].slice(0, 30);
-    db.ref(`users_data/${currentUser}/game_history`).set(newHistory);
-}
-
-function toggleGameHistory() {
-    const box = document.getElementById('gameHistoryBox');
-    if (!box) return;
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-function renderGameHistoryUI() {
-    const container = document.getElementById('gameHistoryList');
-    if (!container) return;
-
-    if (gameHistory.length === 0) {
-        container.innerHTML = '<em style="color:#888;">История пока пуста</em>';
-        return;
-    }
-
-    let html = '';
-    gameHistory.forEach(item => {
-        html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
-                <div>
-                    <strong>${item.mode}</strong> <small style="color:#64748b;">(${item.date})</small>
-                    <div style="font-size: 11px; color:#475569;">Тег: #${item.tag} | Слов: ${item.total}</div>
-                </div>
-                <div style="font-weight: bold; font-size: 14px; color: ${item.percentage >= 80 ? '#10b981' : '#f59e0b'};">
-                    ${item.percentage}% (${item.correctCount}/${item.total})
-                </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-function clearGameHistory() {
-    if (confirm('Очистить историю игр?')) {
-        if (currentUser) {
-            db.ref(`users_data/${currentUser}/game_history`).remove();
-        }
-    }
-}
+// Инициализация интерфейса колонок
+updateColumnCheckboxes();
 
 // ==========================================
-// 11. ИМПОРТ И ЭКСПОРТ EXCEL
+// 10. ЭКСПОРТ И ИМПОРТ EXCEL (.xlsx)
 // ==========================================
 function exportToExcel() {
     if (dictionary.length === 0) {
@@ -1910,9 +1820,9 @@ function importFromExcel(event) {
                 const choice = prompt(
                     `Найдено ${duplicateMatches.length} совпадений слов из файла со словарём!\n\n` +
                     `Введите цифру варианта:\n` +
-                    `1 — Обновить существующие (Файл главный: обновит переводы/контекст, добавив новые теги к текущим)\n` +
-                    `2 — Сохранить словарь (Словарь главный: пропустить совпадения, залить только новые слова)\n` +
-                    `3 — Залить всё как дубликаты (Создать копии карточек)`,
+                    `1 — Обновить существующие\n` +
+                    `2 — Пропустить совпадения\n` +
+                    `3 — Залить всё как дубликаты`,
                     '1'
                 );
 
@@ -1933,7 +1843,6 @@ function importFromExcel(event) {
                 duplicateMatches.forEach(match => {
                     const existing = dictionary[match.index];
                     const incoming = match.newItem;
-
                     const mergedTags = Array.from(new Set([...(existing.tags || []), ...(incoming.tags || [])]));
 
                     dictionary[match.index] = {
@@ -1954,12 +1863,15 @@ function importFromExcel(event) {
             newWordsList.forEach((item, idx) => {
                 dictionary.unshift({
                     id: Date.now() + idx,
-                    ...item
+                    ...item,
+                    reviewCount: 0,
+                    errorCount: 0
                 });
                 addedCount++;
             });
 
             saveAndRender();
+            renderSingleTagFilter();
             alert(`Импорт успешно завершён!\n• Добавлено новых слов: ${addedCount}\n• Обновлено существующих: ${updatedCount}`);
             event.target.value = '';
         } catch (err) {
@@ -1970,242 +1882,195 @@ function importFromExcel(event) {
 }
 
 // ==========================================
-// 12. ИНИЦИАЛИЗАЦИЯ
+// 11. МАССОВОЕ ДОБАВЛЕНИЕ СЛОВ
 // ==========================================
-updateColumnCheckboxes();
-
-// ==========================================
-// ЕДИНЫЙ ОПТИМИЗИРОВАННЫЙ РЕНДЕР СЛОВ (ТАБЛИЦА + СКРОЛЛ + СТАТИСТИКА)
-// ==========================================
-function renderWords() {
-    // 1. Сохраняем текущую позицию скролла страницы перед перерисовкой
-    const currentScrollY = window.scrollY;
-
-    renderTableHeaders();
-
-    const tbody = document.getElementById('dictTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    const filtered = getFilteredWords();
-
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding: 20px;">Слов не найдено</td></tr>';
-        updateBulkUI();
-        return;
-    }
-
-    filtered.forEach(item => {
-        // Инициализация полей статистики, если их нет
-        if (item.reviewCount === undefined) item.reviewCount = 0;
-        if (item.errorCount === undefined) item.errorCount = 0;
-
-        const isChecked = selectedWordIds.includes(item.id);
-        const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">#${t}</span>`).join('') : '';
-        const mainText = item.mainRu || item.ru || '';
-
-        const tr = document.createElement('tr');
-        tr.id = `word-row-${item.id}`;
-        
-        let rowHtml = `<td><input type="checkbox" class="word-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectWord(${item.id})"></td>`;
-
-        if (columnVisibility.en) {
-            rowHtml += `
-                <td>
-                    <strong>${item.en}</strong>
-                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
-                    <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Повторов: ${item.reviewCount} | Ош: <span style="color: ${item.errorCount > 0 ? '#ef4444' : 'inherit'};">${item.errorCount}</span></div>
-                </td>
-            `;
-        } else {
-            rowHtml += `
-                <td>
-                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
-                        <strong>${item.en}</strong>
-                    </span>
-                    <button class="btn-audio" onclick="event.stopPropagation(); speak('${item.en.replace(/'/g, "\\'")}')">🔊</button>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.mainRu) {
-            rowHtml += `<td style="color:#27ae60; font-weight:600;">${mainText}</td>`;
-        } else {
-            rowHtml += `
-                <td>
-                    <span class="cell-hidden-text" onclick="toggleSecretText(this)">
-                        <strong style="color:#27ae60;">${mainText}</strong>
-                    </span>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.extraRu) {
-            rowHtml += `<td style="color:#64748b;"><div class="cell-scrollable">${item.extraRu || ''}</div></td>`;
-        }
-
-        if (columnVisibility.context) {
-            rowHtml += `<td style="white-space:pre-line; color:#555;"><div class="cell-scrollable">${item.context || ''}</div></td>`;
-        }
-
-        if (columnVisibility.tags) {
-            rowHtml += `
-                <td>
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
-                        <div class="tags">${tagsHtml}</div>
-                        <button type="button" class="btn-edit-cat" onclick="quickEditWordTags(${item.id})" title="Быстро изменять теги">✏</button>
-                    </div>
-                </td>
-            `;
-        }
-
-        if (columnVisibility.actions) {
-            rowHtml += `
-                <td>
-                    <div class="actions">
-                        <button class="btn-action btn-edit" onclick="editWord(${item.id})">✏</button>
-                        <button class="btn-action btn-delete" onclick="deleteWord(${item.id})">🗑️</button>
-                    </div>
-                </td>
-            `;
-        }
-
-        tr.innerHTML = rowHtml;
-        tbody.appendChild(tr);
-    });
-
-    updateBulkUI();
-
-    // 2. Мгновенно возвращаем скролл на прежнее место без рывков
-    window.scrollTo({
-        top: currentScrollY,
-        behavior: 'instant'
-    });
+function openBulkAddModal() {
+    const modal = document.getElementById('bulkAddModal');
+    if (modal) modal.style.display = 'flex';
+    const textarea = document.getElementById('bulkWordsTextarea');
+    if (textarea) textarea.value = '';
+    const progress = document.getElementById('bulkAddProgress');
+    if (progress) progress.style.display = 'none';
 }
 
-// ------------------------------------------
-// ДОБАВЛЕНИЕ СЛОВА С МЕТadАТА СТАТИСТИКИ
-// ------------------------------------------
-function addNewWord(event) {
-    if (event) event.preventDefault();
+function closeBulkAddModal() {
+    const modal = document.getElementById('bulkAddModal');
+    if (modal) modal.style.display = 'none';
+}
 
-    const enInput = document.getElementById('newEnWord');
-    const mainRuInput = document.getElementById('newMainRuWord');
-    const extraRuInput = document.getElementById('newExtraRuWord');
-    const contextInput = document.getElementById('newContextWord');
-
-    if (!enInput || !mainRuInput) return;
-
-    const en = enInput.value.trim();
-    const mainRu = mainRuInput.value.trim();
-    const extraRu = extraRuInput ? extraRuInput.value.trim() : '';
-    const context = contextInput ? contextInput.value.trim() : '';
-
-    if (!en || !mainRu) {
-        alert('Заполните обязательные поля (Английский и Основной перевод)!');
+async function processBulkWordsAdd() {
+    const rawText = document.getElementById('bulkWordsTextarea').value;
+    if (!rawText.trim()) {
+        alert('Введите слова для добавления!');
         return;
     }
 
-    // Собираем выбранные теги из чекбоксов формы добавления
-    const selectedTags = [];
-    document.querySelectorAll('.new-word-tag-checkbox:checked').forEach(cb => {
-        selectedTags.push(cb.value);
-    });
+    const words = rawText
+        .split(/[\n,]+/)
+        .map(w => w.trim().toLowerCase())
+        .filter(w => w.length > 0);
 
-    const newWord = {
-        id: Date.now(),
-        en,
-        mainRu,
-        extraRu,
-        context,
-        tags: selectedTags,
-        createdAt: new Date().toISOString(), // Дата создания для статистики
-        lastReviewed: null,                  // Когда последний раз тренировали
-        reviewCount: 0,                      // Сколько раз участвовало в играх
-        errorCount: 0                        // Сколько раз совершались ошибки
-    };
+    if (words.length === 0) return;
 
-    dictionary.unshift(newWord); // Добавляем в начало локального массива
-    syncDictionaryWithFirebase();
+    const btnRun = document.getElementById('btnRunBulkAdd');
+    const progressBox = document.getElementById('bulkAddProgress');
+    const progressText = document.getElementById('bulkAddProgressText');
 
-    // Очищаем форму
-    enInput.value = '';
-    mainRuInput.value = '';
-    if (extraRuInput) extraRuInput.value = '';
-    if (contextInput) contextInput.value = '';
-    document.querySelectorAll('.new-word-tag-checkbox').forEach(cb => cb.checked = false);
+    if (btnRun) btnRun.disabled = true;
+    if (progressBox) progressBox.style.display = 'block';
 
+    let addedCount = 0;
+    let total = words.length;
+
+    for (let i = 0; i < total; i++) {
+        const en = words[i];
+        if (progressText) progressText.innerText = `${i + 1}/${total}`;
+
+        const details = await fetchWordDetails(en);
+        const mainRu = details ? details.mainRu : '';
+        const extraRu = details ? details.extraRu : '';
+
+        let tags = ['new'];
+        if (details && details.detectedPosList) {
+            details.detectedPosList.forEach(pos => {
+                if (!tags.includes(pos)) tags.push(pos);
+            });
+        }
+
+        const context = `1. I need to ${en} this right now. — Мне нужно ${mainRu || en} это прямо сейчас.`;
+
+        dictionary.unshift({
+            id: Date.now() + i,
+            en, mainRu, extraRu, context, tags,
+            reviewCount: 0,
+            errorCount: 0
+        });
+
+        addedCount++;
+        await new Promise(r => setTimeout(r, 120));
+    }
+
+    if (btnRun) btnRun.disabled = false;
+    if (progressBox) progressBox.style.display = 'none';
+    closeBulkAddModal();
+
+    saveAndRender();
+    renderSingleTagFilter();
+    alert(`Успешно добавлено слов: ${addedCount}. Им присвоен тег #new!`);
+}
+
+// ==========================================
+// 12. МАССОВЫЕ ДЕЙСТВИЯ В ТАБЛИЦЕ (ВЫБОР, ТЕГИ, УДАЛЕНИЕ)
+// ==========================================
+function toggleSelectAll(checked) {
+    const filtered = getFilteredWords();
+    if (checked) {
+        selectedWordIds = filtered.map(w => w.id);
+    } else {
+        selectedWordIds = [];
+    }
     renderWords();
 }
 
-// ==========================================
-// БЕЗОПАСНОСТЬ: ХЕШИРОВАНИЕ ПАРОЛЕЙ (SHA-256)
-// ==========================================
-async function hashPassword(password) {
-    const msgUint8 = new TextEncoder().encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+function renderBulkTagSelect() {
+    const select = document.getElementById('bulkTagSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Выберите тег --</option>';
+    
+    let allTags = [];
+    categories.forEach(cat => {
+        cat.tags.forEach(t => {
+            if (!allTags.includes(t)) allTags.push(t);
+        });
+    });
+
+    allTags.forEach(tag => {
+        select.innerHTML += `<option value="${tag}">#${tag}</option>`;
+    });
 }
 
-// ==========================================
-// УПРАВЛЕНИЕ СМЕНОЙ ПАРОЛЯ
-// ==========================================
-function openChangePasswordModal() {
-    document.getElementById('oldPasswordInput').value = '';
-    document.getElementById('newPasswordInput').value = '';
-    document.getElementById('changePassError').style.display = 'none';
-    document.getElementById('changePassSuccess').style.display = 'none';
-    document.getElementById('changePasswordModal').style.display = 'flex';
-}
-
-function closeChangePasswordModal() {
-    document.getElementById('changePasswordModal').style.display = 'none';
-}
-
-async function submitChangePassword() {
-    const oldPass = document.getElementById('oldPasswordInput').value.trim();
-    const newPass = document.getElementById('newPasswordInput').value.trim();
-    const errEl = document.getElementById('changePassError');
-    const succEl = document.getElementById('changePassSuccess');
-
-    errEl.style.display = 'none';
-    succEl.style.display = 'none';
-
-    if (!oldPass || !newPass) {
-        errEl.innerText = 'Заполните оба поля!';
-        errEl.style.display = 'block';
+function applyBulkTag(action) {
+    const tagSelect = document.getElementById('bulkTagSelect');
+    if (!tagSelect) return;
+    const tag = tagSelect.value;
+    if (!tag) {
+        alert('Выберите тег из списка!');
         return;
     }
 
-    if (newPass.length < 4) {
-        errEl.innerText = 'Новый пароль слишком короткий (минимум 4 символа)!';
-        errEl.style.display = 'block';
-        return;
+    if (selectedWordIds.length === 0) return;
+
+    dictionary = dictionary.map(item => {
+        if (selectedWordIds.includes(item.id)) {
+            let tags = item.tags ? [...item.tags] : [];
+            if (action === 'add') {
+                if (!tags.includes(tag)) tags.push(tag);
+            } else if (action === 'remove') {
+                tags = tags.filter(t => t !== tag);
+            }
+            return { ...item, tags };
+        }
+        return item;
+    });
+
+    saveAndRender();
+    renderWords();
+    renderSingleTagFilter();
+    alert('Теги успешно обновлены для выбранных слов!');
+}
+
+function applyBulkDelete() {
+    if (selectedWordIds.length === 0) return;
+    if (!confirm(`Удалить выбранные слова (${selectedWordIds.length} шт.)?`)) return;
+
+    dictionary = dictionary.filter(item => !selectedWordIds.includes(item.id));
+    selectedWordIds = [];
+    const selectAllCb = document.getElementById('selectAllCheckbox');
+    if (selectAllCb) selectAllCb.checked = false;
+
+    saveAndRender();
+    renderWords();
+    renderSingleTagFilter();
+}
+
+async function bulkAutoTranslate() {
+    if (selectedWordIds.length === 0) return;
+    if (!confirm(`Обновить переводы и части речи для выбранных слов (${selectedWordIds.length} шт.)?`)) return;
+
+    const btn = document.getElementById('btnBulkAuto');
+    const originalText = btn ? btn.innerText : '🔄 Обновить';
+    if (btn) btn.disabled = true;
+
+    let total = selectedWordIds.length;
+    let completed = 0;
+
+    for (let id of selectedWordIds) {
+        completed++;
+        if (btn) btn.innerText = `⏳ ${completed}/${total}`;
+
+        const index = dictionary.findIndex(item => item.id === id);
+        if (index !== -1) {
+            const item = dictionary[index];
+            const details = await fetchWordDetails(item.en);
+
+            if (details) {
+                if (details.mainRu) item.mainRu = details.mainRu;
+                if (details.extraRu) item.extraRu = details.extraRu;
+                let tags = item.tags ? [...item.tags] : [];
+                details.detectedPosList.forEach(pos => {
+                    if (!tags.includes(pos)) tags.push(pos);
+                });
+                item.tags = tags;
+            }
+        }
+        await new Promise(r => setTimeout(r, 150));
     }
 
-    if (!currentUser) return;
-
-    // Проверяем старый пароль путем хеширования
-    const oldPassHash = await hashPassword(oldPass);
-    const userRef = db.ref(`users_db/${currentUser}`);
-    const snapshot = await userRef.once('value');
-    const userData = snapshot.val();
-
-    if (!userData || userData.password !== oldPassHash) {
-        errEl.innerText = 'Неверный старый пароль!';
-        errEl.style.display = 'block';
-        return;
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = originalText;
     }
-
-    // Хешируем и сохраняем новый пароль
-    const newPassHash = await hashPassword(newPass);
-    await userRef.update({ password: newPassHash });
-
-    succEl.innerText = 'Пароль успешно изменен!';
-    succEl.style.display = 'block';
-
-    setTimeout(() => {
-        closeChangePasswordModal();
-    }, 1500);
+    saveAndRender();
+    renderWords();
+    alert(`Успешно обновлено слов: ${total}`);
 }
