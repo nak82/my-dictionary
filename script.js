@@ -34,6 +34,7 @@ let currentSortColumn = 'en';
 let currentSortDirection = 'asc';
 
 let lastEditedWordId = null;
+let categoryVisibility = JSON.parse(localStorage.getItem('my_category_visibility')) || {};
 
 let columnVisibility = JSON.parse(localStorage.getItem('my_column_visibility')) || {
     en: true, mainRu: true, extraRu: true, context: true, tags: true, actions: true
@@ -146,6 +147,7 @@ function attachUserListeners() {
         }
         renderCategoriesUI();
         renderSingleTagFilter();
+        renderCategoryVisibilityCheckboxes();
     });
 }
 
@@ -174,6 +176,31 @@ if (currentUser) {
 // ==========================================
 // 2. НАВИГАЦИЯ И ФОРМА
 // ==========================================
+
+function renderCategoryVisibilityCheckboxes() {
+    const bar = document.getElementById('categoryVisibilityBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    categories.forEach(cat => {
+        // По умолчанию все категории видны, если настройки еще нет
+        if (categoryVisibility[cat.id] === undefined) {
+            categoryVisibility[cat.id] = true;
+        }
+
+        const isChecked = categoryVisibility[cat.id];
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCategoryVisibility(${cat.id}, this.checked)"> ${cat.name}`;
+        bar.appendChild(label);
+    });
+}
+
+function toggleCategoryVisibility(catId, isVisible) {
+    categoryVisibility[catId] = isVisible;
+    localStorage.setItem('my_category_visibility', JSON.stringify(categoryVisibility));
+    renderWords();
+}
+
 function toggleFormCard() {
     const card = document.getElementById('formCard');
     const text = document.getElementById('toggleFormText');
@@ -769,6 +796,7 @@ function renderTableHeaders() {
         html += `<th class="th-sortable" onclick="sortBy('tags')">Теги ${getSortIcon('tags')}</th>`;
     }
     if (columnVisibility.actions) {
+        html += `<th class="th-sortable" onclick="sortBy('id')">Изменено ${getSortIcon('id')}</th>`;
         html += `<th>Действия</th>`;
     }
 
@@ -890,13 +918,25 @@ function renderWords() {
         updateBulkUI();
         return;
     }
+    
 
     filtered.forEach(item => {
         if (item.reviewCount === undefined) item.reviewCount = 0;
         if (item.errorCount === undefined) item.errorCount = 0;
 
         const isChecked = selectedWordIds.includes(item.id);
-        const tagsHtml = item.tags ? item.tags.map(t => `<span class="tag">#${t}</span>`).join('') : '';
+        let tagsHtml = '';
+if (item.tags && Array.isArray(item.tags)) {
+    // Фильтруем теги: оставляем только те, которые принадлежат видимым категориям
+    const visibleTags = item.tags.filter(tag => {
+        // Находим, к какой категории принадлежит этот тег
+        const parentCat = categories.find(cat => cat.tags && cat.tags.includes(tag));
+        // Если категория не найдена или её чекбокс включен — показываем тег
+        if (!parentCat) return true;
+        return categoryVisibility[parentCat.id] !== false;
+    });
+    tagsHtml = visibleTags.map(t => `<span class="tag">#${t}</span>`).join('');
+}
         const mainText = item.mainRu || item.ru || '';
 
         const tr = document.createElement('tr');
@@ -1609,82 +1649,185 @@ function checkAudioDictAnswer(wordId) {
 }
 
 // 6. Произношение (Микрофон)
+// Глобальная переменная для хранения последней аудио-записи/текста пользователя в сессии
+let lastRecognizedSpeechText = "";
+let currentVoiceRecognitionObj = null;
+
 function renderVoiceCheckMode() {
     const container = document.getElementById('activeGameContainer');
     if (!container) return;
     const item = activeGame.words[activeGame.currentIndex];
+    lastRecognizedSpeechText = "";
 
     container.innerHTML = `
         <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 25px;">
             <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">🎙️ Произношение (UK Accent)</div>
             <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin: 10px 0;">${item.en}</div>
-            <div style="font-size: 16px; color: #10b981; margin-bottom: 15px;">${item.mainRu || item.ru}</div>
-            <button class="btn-main" style="background: #0284c7; max-width: 200px; margin-bottom: 15px;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊 Слушать эталон</button>
-            <div style="margin: 15px 0;">
-                <button id="micBtn" class="btn-main" style="background: #ef4444; font-size: 20px; padding: 15px 25px; border-radius: 50px;" onclick="startVoiceRecognition('${item.en.replace(/'/g, "\\'")}', ${item.id})">🎙️ Говорите...</button>
+            <div style="font-size: 16px; color: #10b981; margin-bottom: 15px;">${item.mainRu || item.ru || ''}</div>
+
+            <!-- Кнопки прослушивания -->
+            <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap;">
+                <button class="btn-main" style="background: #0284c7; flex: 1; min-width: 160px;" onclick="speak('${item.en.replace(/'/g, "\\'")}')">🔊 Слушать эталон</button>
+                <button id="listenMyVoiceBtn" class="btn-main" style="background: #6366f1; flex: 1; min-width: 160px; display: none;" onclick="speakUserVoice()">🗣️ Прослушать мой голос</button>
             </div>
+            
+            <!-- Панель управления микрофоном (Запись / Стоп) -->
+            <div style="margin: 15px 0; display: flex; gap: 10px; justify-content: center;">
+                <button id="micRecordBtn" class="btn-main" style="background: #ef4444; font-size: 16px; padding: 12px 20px; border-radius: 30px; flex: 2;" onclick="toggleVoiceRecording('${item.en.replace(/'/g, "\\'")}')">🎙️ Говорить</button>
+                <button id="micStopBtn" class="btn-main" style="background: #64748b; font-size: 16px; padding: 12px 15px; border-radius: 30px; flex: 1; display: none;" onclick="stopVoiceRecording()">⏹ Стоп</button>
+            </div>
+
+            <!-- Результат распознавания -->
             <div id="voiceResultBox" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 14px;">
                 <div>Вы сказали: <strong id="recognizedText" style="color: #0284c7;">—</strong></div>
                 <div style="margin-top: 6px; font-weight: bold;" id="matchScoreText">—</div>
             </div>
-            <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-                <button type="button" class="btn-action" style="background: #64748b;" onclick="nextVoiceStep(false)">❌ Ошибка</button>
-                <button type="button" class="btn-action" style="background: #10b981;" onclick="nextVoiceStep(true)">✅ Засчитать</button>
+
+            <!-- Кнопки перехода к следующему слову -->
+            <div style="margin-top: 25px; display: flex; justify-content: space-between; gap: 10px;">
+                <button type="button" class="btn-action" style="background: #ef4444; flex: 1; padding: 12px;" onclick="nextVoiceStep(false)">❌ Ошибка / Повторить</button>
+                <button type="button" class="btn-action" style="background: #10b981; flex: 1; padding: 12px;" onclick="nextVoiceStep(true)">✅ Засчитать и далее</button>
             </div>
         </div>
     `;
+
+    // Автоматически озвучиваем эталон при открытии слова
     setTimeout(() => speak(item.en), 300);
 }
 
-function startVoiceRecognition(targetWord, wordId) {
+function toggleVoiceRecording(targetWord) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert('Браузер не поддерживает распознавание речи. Используйте Google Chrome.');
+        alert('Ваш браузер не поддерживает распознавание речи. Попробуйте Google Chrome.');
         return;
     }
+
+    const recordBtn = document.getElementById('micRecordBtn');
+    const stopBtn = document.getElementById('micStopBtn');
+
+    // Если уже идет запись — останавливаем
+    if (currentVoiceRecognitionObj) {
+        stopVoiceRecording();
+        return;
+    }
+
     const recognition = new SpeechRecognition();
+    currentVoiceRecognitionObj = recognition;
     recognition.lang = 'en-GB';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    const micBtn = document.getElementById('micBtn');
-    if (micBtn) {
-        micBtn.innerText = '🔴 Слушаю... Говорите!';
-        micBtn.style.background = '#dc2626';
+    if (recordBtn) {
+        recordBtn.innerText = '🔴 Слушаю... Говорите!';
+        recordBtn.style.background = '#dc2626';
+    }
+    if (stopBtn) {
+        stopBtn.style.display = 'block';
     }
 
     recognition.onresult = (event) => {
         const speechResult = event.results[0][0].transcript.trim().toLowerCase();
-        if (micBtn) {
-            micBtn.innerText = '🎙️ Сказать снова';
-            micBtn.style.background = '#ef4444';
-        }
+        lastRecognizedSpeechText = speechResult;
+        
+        resetMicUI();
+
         const cleanTarget = targetWord.toLowerCase().replace(/[^a-z\s]/g, '');
         const cleanSpoken = speechResult.replace(/[^a-z\s]/g, '');
-        let matchPercent = (cleanSpoken === cleanTarget) ? 100 : (cleanSpoken.includes(cleanTarget) ? 80 : 30);
+
+        let matchPercent = 0;
+        if (cleanSpoken === cleanTarget) {
+            matchPercent = 100;
+        } else if (cleanSpoken.includes(cleanTarget) || cleanTarget.includes(cleanSpoken)) {
+            matchPercent = 80;
+        } else {
+            matchPercent = 40;
+        }
 
         const resBox = document.getElementById('voiceResultBox');
-        if (resBox) resBox.style.display = 'block';
-        document.getElementById('recognizedText').innerText = `"${speechResult}"`;
-        document.getElementById('matchScoreText').innerHTML = `Совпадение: <span style="color: ${matchPercent >= 80 ? '#10b981' : '#f59e0b'};">${matchPercent}%</span>`;
+        const recTextEl = document.getElementById('recognizedText');
+        const scoreEl = document.getElementById('matchScoreText');
+        const listenMyVoiceBtn = document.getElementById('listenMyVoiceBtn');
 
-        const currentItem = activeGame.words.find(w => w.id === wordId);
+        if (resBox) resBox.style.display = 'block';
+        if (recTextEl) recTextEl.innerText = `"${speechResult}"`;
+        if (scoreEl) scoreEl.innerHTML = `Совпадение: <span style="color: ${matchPercent >= 80 ? '#10b981' : '#f59e0b'};">${matchPercent}%</span>`;
+        if (listenMyVoiceBtn) listenMyVoiceBtn.style.display = 'block';
+
+        // Предварительно фиксируем результат в статистике игры
+        const currentItem = activeGame.words[activeGame.currentIndex];
         if (matchPercent >= 80) {
-            if (!activeGame.correctWords.some(w => w.id === wordId)) activeGame.correctWords.push(currentItem);
+            if (!activeGame.correctWords.some(w => w.id === currentItem.id)) {
+                activeGame.correctWords.push(currentItem);
+                activeGame.errors = activeGame.errors.filter(w => w.id !== currentItem.id);
+            }
         } else {
-            if (!activeGame.errors.some(w => w.id === wordId)) activeGame.errors.push(currentItem);
+            if (!activeGame.errors.some(w => w.id === currentItem.id)) {
+                activeGame.errors.push(currentItem);
+                activeGame.correctWords = activeGame.correctWords.filter(w => w.id !== currentItem.id);
+            }
         }
     };
+
+    recognition.onerror = () => {
+        resetMicUI();
+        alert('Не удалось распознать речь. Попробуйте еще раз.');
+    };
+
+    recognition.onend = () => {
+        resetMicUI();
+    };
+
     recognition.start();
 }
 
-function nextVoiceStep(passed) {
-    const currentItem = activeGame.words[activeGame.currentIndex];
-    if (passed) {
-        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) activeGame.correctWords.push(currentItem);
-    } else {
-        if (!activeGame.errors.some(w => w.id === currentItem.id)) activeGame.errors.push(currentItem);
+function stopVoiceRecording() {
+    if (currentVoiceRecognitionObj) {
+        try {
+            currentVoiceRecognitionObj.stop();
+        } catch(e) {}
+        currentVoiceRecognitionObj = null;
     }
+    resetMicUI();
+}
+
+function resetMicUI() {
+    const recordBtn = document.getElementById('micRecordBtn');
+    const stopBtn = document.getElementById('micStopBtn');
+    if (recordBtn) {
+        recordBtn.innerText = '🎙️ Говорить снова';
+        recordBtn.style.background = '#ef4444';
+    }
+    if (stopBtn) {
+        stopBtn.style.display = 'none';
+    }
+    currentVoiceRecognitionObj = null;
+}
+
+// Генерация / озвучивание того, что распознал микрофон
+function speakUserVoice() {
+    if (!lastRecognizedSpeechText) return;
+    const utterance = new SpeechSynthesisUtterance(lastRecognizedSpeechText);
+    utterance.lang = 'en-GB';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+}
+
+function nextVoiceStep(passed) {
+    stopVoiceRecording();
+    const currentItem = activeGame.words[activeGame.currentIndex];
+    
+    if (passed) {
+        if (!activeGame.correctWords.some(w => w.id === currentItem.id)) {
+            activeGame.correctWords.push(currentItem);
+            activeGame.errors = activeGame.errors.filter(w => w.id !== currentItem.id);
+        }
+    } else {
+        if (!activeGame.errors.some(w => w.id === currentItem.id)) {
+            activeGame.errors.push(currentItem);
+            activeGame.correctWords = activeGame.correctWords.filter(w => w.id !== currentItem.id);
+        }
+    }
+
     activeGame.currentIndex++;
     renderGameStep();
 }
