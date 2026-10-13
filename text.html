@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Audio & Reading Trainer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        wordWhite: 'transparent',
+                        wordKnownGreen: '#22c55e',
+                        wordGreen: '#10b981',
+                        wordBlue: '#3b82f6',
+                        wordYellow: '#f59e0b',
+                        wordRed: '#ef4444',
+                        wordPink: '#fbcfe8',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .word-badge {
+            transition: all 0.15s ease;
+            cursor: pointer;
+            padding: 1px 3px;
+            margin: 1px 0px;
+            border-radius: 4px;
+            display: inline;
+            user-select: text;
+            -webkit-user-select: text;
+            font-size: 17px;
+        }
+        .word-badge:hover {
+            opacity: 0.85;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+        }
+        .word-active {
+            outline: 2px solid #2563eb !important;
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            font-weight: bold;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        }
+        .paragraph-block {
+            margin-bottom: 1.5rem;
+            line-height: 2.2rem;
+            font-size: 17px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="router.navigate('home')">
+                <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg">
+                    <i class="fa-solid fa-headphones-simple text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">English Reader & Audio</h1>
+                    <p class="text-xs text-slate-400">Тренажер чтения и аудирования с умным словарем</p>
+                </div>
+            </div>
+            <nav class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="router.navigate('home')" class="px-3 py-2 rounded-lg text-sm font-medium transition hover:bg-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span class="hidden sm:inline">Уроки</span>
+                </button>
+                <button onclick="router.navigate('dictionary')" class="px-3 py-2 rounded-lg text-sm font-medium transition hover:bg-slate-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span class="hidden sm:inline">Справочник</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
+        <div id="app"></div>
+    </main>
+
+    <!-- Floating Translation & Idiom Card -->
+    <div id="translationModal" class="hidden fixed z-50 bg-slate-800 border border-slate-600 shadow-2xl rounded-2xl p-4 w-80 text-slate-100 transition-all transform duration-150">
+        <div class="flex justify-between items-start border-b border-slate-700 pb-2 mb-2">
+            <div>
+                <h4 id="transSourceText" class="font-bold text-base text-blue-400 leading-tight">Word / Phrase</h4>
+                <p id="transResultText" class="text-sm text-emerald-400 font-medium mt-0.5">Перевод...</p>
+            </div>
+            <button onclick="closeTranslationModal()" class="text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        
+        <div id="idiomExplanationBox" class="hidden bg-slate-900 border border-slate-700 rounded-xl p-2.5 mb-3 text-xs text-slate-300 space-y-1">
+            <span class="text-amber-400 font-bold flex items-center"><i class="fa-solid fa-lightbulb mr-1.5"></i> Контекст / Фразовый глагол:</span>
+            <p id="idiomExplanationText" class="leading-relaxed text-[11px] text-slate-400"></p>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-[11px] text-slate-400 font-medium">Присвоить цвет/статус:</p>
+            <div class="grid grid-cols-3 gap-1.5" id="modalColorPickers"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-400">
+        <p>English Audio & Reading Platform &bull; Синтез речи (Web Speech API)</p>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        const STORAGE_KEY_TEXTS = 'eng_reader_texts_v6';
+        const STORAGE_KEY_DICT = 'eng_reader_dict_v6';
+        const CHARS_PER_PAGE = 1000;
+
+        let state = {
+            currentRoute: 'home',
+            activeTextId: null,
+            currentPage: 1,
+            texts: JSON.parse(localStorage.getItem(STORAGE_KEY_TEXTS)) || [
+                {
+                    id: 'sample-1',
+                    title: 'The Secret of Edinburgh Castle',
+                    content: `Edinburgh Castle is a historic fortress which dominates the skyline of the city of Edinburgh, Scotland, from its position on the volcanic Castle Rock.\n\nArchaeologists have established human occupation of the rock since the Iron Age, although the nature of the early settlement is unclear. There has been a royal castle on the rock since at least the reign of David I in the 12th century, and the site continued to be a royal residence until 1633.\n\nFrom the 15th century, the castle's residential role declined, and by the 17th century it was principally used as military barracks with a large garrison. Looking forward to your visit, you will find it hard to give up exploring its ancient halls.`,
+                    createdAt: new Date().toISOString()
+                }
+            ],
+            dictionary: JSON.parse(localStorage.getItem(STORAGE_KEY_DICT)) || {},
+            activeBrushColor: null,
+            isPlaying: false,
+            currentWordIdxInPage: 0,
+            totalWordsInPage: 0,
+            playbackRate: 1.0,
+            volume: 1.0,
+            modalTargetWord: '',
+            speechTimer: null,
+            elapsedSeconds: 0,
+            estimatedTotalSec: 0,
+            wordCharOffsets: [] // Хранит символьные смещения для идеальной синхронизации караоке
+        };
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY_TEXTS, JSON.stringify(state.texts));
+            localStorage.setItem(STORAGE_KEY_DICT, JSON.stringify(state.dictionary));
+        }
+
+        const colorsConfig = {
+            wordWhite: { name: 'Незнакомо', bg: 'bg-transparent text-slate-200' },
+            wordKnownGreen: { name: 'Знаю', bg: 'bg-green-600 text-white font-medium px-1 rounded' },
+            wordGreen: { name: 'Закрепить', bg: 'bg-emerald-600 text-white px-1 rounded' },
+            wordBlue: { name: 'Учить', bg: 'bg-blue-600 text-white px-1 rounded' },
+            wordYellow: { name: 'Слышал', bg: 'bg-amber-500 text-slate-900 font-medium px-1 rounded' },
+            wordRed: { name: 'Не знаю', bg: 'bg-rose-600 text-white px-1 rounded' },
+            wordPink: { name: 'Игнорировать', bg: 'bg-pink-300 text-slate-900 px-1 rounded' }
+        };
+
+        const router = {
+            navigate(route, param = null) {
+                stopSpeech();
+                state.currentRoute = route;
+                if (param) {
+                    state.activeTextId = param;
+                    state.currentPage = 1;
+                }
+                closeTranslationModal();
+                render();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        const commonIdioms = {
+            "look forward to": "Фразовый глагол: 'очень ждать / предвкушать что-то'.",
+            "give up": "Фразовый глагол: 'бросать / сдаваться / прекращать делать что-то'.",
+            "carry on": "Фразовый глагол: 'продолжать делать что-то'.",
+            "find hard": "Устойчивое выражение: 'считать что-то сложным / трудным'."
+        };
+
+        function tokenizeText(text) {
+            const regex = /(\n\s*\n|[a-zA-ZÀ-ÿ'-]+|[0-9]+|[^\s\w]+|\s+)/g;
+            return text.match(regex) || [];
+        }
+
+        function getPagesForText(text) {
+            const paragraphs = text.split(/\n\s*\n/);
+            const pages = [];
+            let currentPageParas = [];
+            let currentChars = 0;
+
+            paragraphs.forEach(p => {
+                if (currentChars + p.length > CHARS_PER_PAGE && currentPageParas.length > 0) {
+                    pages.push(currentPageParas.join('\n\n'));
+                    currentPageParas = [p];
+                    currentChars = p.length;
+                } else {
+                    currentPageParas.push(p);
+                    currentChars += p.length;
+                }
+            });
+
+            if (currentPageParas.length > 0) {
+                pages.push(currentPageParas.join('\n\n'));
+            }
+
+            return pages.length > 0 ? pages : [text];
+        }
+
+        function calculateLessonStats(textObj) {
+            const words = textObj.content.match(/[a-zA-ZÀ-ÿ]+/g) || [];
+            const totalWords = words.length;
+            const counts = { wordWhite: 0, wordKnownGreen: 0, wordGreen: 0, wordBlue: 0, wordYellow: 0, wordRed: 0, wordPink: 0 };
+            let learnedCount = 0;
+
+            words.forEach(w => {
+                const clean = w.toLowerCase();
+                const item = state.dictionary[clean];
+                if (item && colorsConfig[item.color]) {
+                    counts[item.color]++;
+                    if (item.color === 'wordKnownGreen' || item.color === 'wordGreen') {
+                        learnedCount++;
+                    }
+                } else {
+                    counts.wordWhite++;
+                }
+            });
+
+            return { totalWords, counts, learnedCount };
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+
+            if (state.currentRoute === 'home') app.innerHTML = renderHome();
+            else if (state.currentRoute === 'add') app.innerHTML = renderAddText();
+            else if (state.currentRoute === 'reader') {
+                app.innerHTML = renderReader();
+                initReaderHandlers();
+            }
+            else if (state.currentRoute === 'dictionary') app.innerHTML = renderDictionary();
+        }
+
+        function renderHome() {
+            let html = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Уроки чтения и аудирования</h2>
+                            <p class="text-sm text-slate-400 mt-1">Загружайте тексты, слушайте естественную речь и изучайте слова в контексте.</p>
+                        </div>
+                        <button onclick="router.navigate('add')" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg transition flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Добавить новый текст</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4">
+            `;
+
+            if (state.texts.length === 0) {
+                html += `<div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-12 text-center text-slate-400"><p class="text-lg">Список уроков пуст.</p></div>`;
+            } else {
+                state.texts.forEach(t => {
+                    const stats = calculateLessonStats(t);
+                    const pages = getPagesForText(t.content);
+                    const learnedPercent = stats.totalWords > 0 ? Math.round((stats.learnedCount / stats.totalWords) * 100) : 0;
+
+                    html += `
+                        <div class="bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-5 transition shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div class="space-y-2 flex-grow cursor-pointer" onclick="router.navigate('reader', '${t.id}')">
+                                <h3 class="text-lg font-bold text-white hover:text-blue-400 transition">${escapeHtml(t.title)}</h3>
+                                <p class="text-sm text-slate-400 line-clamp-2">${escapeHtml(t.content)}</p>
+                                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+                                    <span><i class="fa-solid fa-font mr-1"></i> Слов: <b>${stats.totalWords}</b></span>
+                                    <span><i class="fa-solid fa-graduation-cap mr-1"></i> Выучено (Знаю+Закрепить): <b>${learnedPercent}%</b></span>
+                                    <span><i class="fa-solid fa-file-lines mr-1"></i> Страниц: <b>${pages.length}</b></span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col items-end gap-3 w-full md:w-auto">
+                                <div class="flex h-3 w-full md:w-52 bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                                    <div style="width: ${(stats.counts.wordWhite/stats.totalWords)*100}%" class="bg-slate-600" title="Незнакомо"></div>
+                                    <div style="width: ${(stats.counts.wordKnownGreen/stats.totalWords)*100}%" class="bg-green-500" title="Знаю"></div>
+                                    <div style="width: ${(stats.counts.wordGreen/stats.totalWords)*100}%" class="bg-emerald-600" title="Закрепить"></div>
+                                    <div style="width: ${(stats.counts.wordBlue/stats.totalWords)*100}%" class="bg-blue-500" title="Учить"></div>
+                                    <div style="width: ${(stats.counts.wordYellow/stats.totalWords)*100}%" class="bg-amber-400" title="Слышал"></div>
+                                    <div style="width: ${(stats.counts.wordRed/stats.totalWords)*100}%" class="bg-rose-500" title="Не знаю"></div>
+                                    <div style="width: ${(stats.counts.wordPink/stats.totalWords)*100}%" class="bg-pink-300" title="Игнорировать"></div>
+                                </div>
+
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="router.navigate('reader', '${t.id}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-play"></i>
+                                        <span>Открыть урок</span>
+                                    </button>
+                                    <button onclick="deleteText('${t.id}')" class="bg-slate-700 hover:bg-rose-900/50 hover:text-rose-400 text-slate-300 text-xs p-2 rounded-lg transition">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function renderAddText() {
+            return `
+                <div class="max-w-2xl mx-auto bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-file-circle-plus text-blue-500"></i>
+                            <span>Добавить новый урок</span>
+                        </h2>
+                        <button onclick="router.navigate('home')" class="text-slate-400 hover:text-white transition">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+
+                    <form onsubmit="handleSaveText(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">Название статьи или рассказа</label>
+                            <input type="text" id="newTextTitle" required placeholder="Например: BBC Article - Technology" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">Текст на английском (абзацы сохраняются)</label>
+                            <textarea id="newTextContent" required rows="9" placeholder="Вставьте текст статьи или рассказа..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-blue-500 transition"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3 pt-2">
+                            <button type="button" onclick="router.navigate('home')" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition">Отмена</button>
+                            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition flex items-center space-x-2">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Создать урок</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderReader() {
+            const textObj = state.texts.find(t => t.id === state.activeTextId);
+            if (!textObj) return `<div class="text-center py-12"><p>Урок не найден.</p></div>`;
+
+            const pages = getPagesForText(textObj.content);
+            if (state.currentPage > pages.length) state.currentPage = pages.length;
+
+            const currentPageContent = pages[state.currentPage - 1] || '';
+            const lessonStats = calculateLessonStats(textObj);
+            const paragraphs = currentPageContent.split(/\n\s*\n/);
+
+            const wordsInCurrentPage = currentPageContent.match(/[a-zA-ZÀ-ÿ]+/g) || [];
+            state.totalWordsInPage = wordsInCurrentPage.length;
+            state.estimatedTotalSec = Math.max(1, Math.round((state.totalWordsInPage / 2.3) / state.playbackRate));
+
+            let html = `
+                <div class="space-y-6">
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div>
+                            <button onclick="router.navigate('home')" class="text-xs text-blue-400 hover:text-blue-300 mb-1 flex items-center space-x-1">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span>К списку уроков</span>
+                            </button>
+                            <h2 class="text-2xl font-bold text-white">${escapeHtml(textObj.title)}</h2>
+                        </div>
+
+                        <!-- Color Brush Bar -->
+                        <div class="flex flex-wrap items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
+                            <span class="text-xs text-slate-400 px-1 font-medium">Кисть:</span>
+                            
+                            <button onclick="setBrushColor(null)" class="px-2 py-1 rounded-lg text-xs border ${state.activeBrushColor === null ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'} transition flex items-center space-x-1">
+                                <i class="fa-solid fa-ban"></i>
+                                <span class="hidden sm:inline">Выкл</span>
+                            </button>
+            `;
+
+            for (const [key, cfg] of Object.entries(colorsConfig)) {
+                const isActive = state.activeBrushColor === key;
+                const countInLesson = lessonStats.counts[key] || 0;
+
+                html += `
+                    <button onclick="setBrushColor('${key}')" class="px-2.5 py-1 rounded-lg text-xs font-medium ${cfg.bg} ${isActive ? 'ring-2 ring-blue-400 scale-105' : 'opacity-80 hover:opacity-100'} transition flex items-center space-x-1.5" title="${cfg.name}">
+                        <span>${cfg.name}</span>
+                        <span class="bg-black/30 px-1.5 py-0.5 rounded-full text-[10px] font-bold">${countInLesson}</span>
+                    </button>
+                `;
+            }
+
+            html += `
+                        </div>
+                    </div>
+
+                    <!-- Audio Player Bar -->
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow-lg sticky top-16 z-20 space-y-3">
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center text-xs text-slate-400 font-mono">
+                                <span id="currentTimeDisplay">${formatTime(state.elapsedSeconds)}</span>
+                                <span id="totalTimeDisplay">${formatTime(state.estimatedTotalSec)}</span>
+                            </div>
+                            <div class="relative w-full h-3 bg-slate-900 rounded-full overflow-hidden cursor-pointer border border-slate-700" onclick="seekAudioProgress(event)">
+                                <div id="audioProgressBar" style="width: ${(state.elapsedSeconds / state.estimatedTotalSec) * 100}%" class="h-full bg-blue-500 transition-all duration-150"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="audioRewind(-10)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="-10 сек">
+                                    <i class="fa-solid fa-rotate-left"></i><span class="text-[9px] ml-0.5">10</span>
+                                </button>
+                                <button onclick="audioRewind(-3)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="-3 сек">
+                                    <i class="fa-solid fa-rotate-left"></i><span class="text-[9px] ml-0.5">3</span>
+                                </button>
+                                <button onclick="togglePlay()" class="w-11 h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg transition text-lg">
+                                    <i class="fa-solid ${state.isPlaying ? 'fa-pause' : 'fa-play'}" id="playIcon"></i>
+                                </button>
+                                <button onclick="audioRewind(3)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="+3 сек">
+                                    <span class="text-[9px] mr-0.5">3</span><i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                                <button onclick="audioRewind(10)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="+10 сек">
+                                    <span class="text-[9px] mr-0.5">10</span><i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center space-x-3 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
+                                <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-gauge-high mr-1"></i> Скорость: <b class="text-blue-400">${state.playbackRate.toFixed(2)}x</b></span>
+                                <input type="range" min="0.25" max="2.0" step="0.05" value="${state.playbackRate}" oninput="changeSpeed(this.value)" class="w-24 accent-blue-500 cursor-pointer">
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <button onclick="changePage(-1)" ${state.currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 bg-slate-700 rounded-lg text-xs"' : 'class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs transition"'}>
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <span class="text-xs text-slate-300 font-medium">Стр. <b>${state.currentPage}</b> из <b>${pages.length}</b></span>
+                                <button onclick="changePage(1)" ${state.currentPage === pages.length ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 bg-slate-700 rounded-lg text-xs"' : 'class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs transition"'}>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reader Box -->
+                    <div class="bg-slate-800 border border-slate-700 p-6 md:p-8 rounded-2xl shadow-xl relative" id="readerTextBox">
+            `;
+
+            let globalWordCounter = 0;
+            let charIndexTracker = 0;
+            state.wordCharOffsets = [];
+
+            paragraphs.forEach(paragraph => {
+                html += `<div class="paragraph-block">`;
+                const tokens = tokenizeText(paragraph);
+
+                tokens.forEach(token => {
+                    const isWord = /[a-zA-ZÀ-ÿ]/.test(token);
+                    if (isWord) {
+                        const clean = token.toLowerCase();
+                        const dictItem = state.dictionary[clean];
+                        const colorKey = dictItem ? dictItem.color : 'wordWhite';
+                        const colorCfg = colorsConfig[colorKey];
+
+                        state.wordCharOffsets.push({
+                            wordIdx: globalWordCounter,
+                            charStart: charIndexTracker,
+                            charEnd: charIndexTracker + token.length
+                        });
+
+                        html += `<span class="word-badge ${colorCfg.bg}" draggable="false" data-word-idx="${globalWordCounter}" data-word="${escapeHtml(token)}" onclick="handleWordClick(event, ${globalWordCounter}, '${escapeHtml(token)}')">${escapeHtml(token)}</span>`;
+                        globalWordCounter++;
+                    } else if (token === '\n' || token === '\r\n') {
+                        html += `<br>`;
+                    } else {
+                        html += `<span class="text-slate-300">${escapeHtml(token)}</span>`;
+                    }
+                    charIndexTracker += token.length;
+                });
+
+                html += `</div>`;
+            });
+
+            html += `
+                    </div>
+
+                    <div class="flex justify-between items-center bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                        <span class="text-xs text-slate-400">Нужно продолжить историю? Добавьте еще текст в этот урок.</span>
+                        <button onclick="promptAppendText('${textObj.id}')" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-xl transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus text-blue-400"></i>
+                            <span>Добавить фрагмент к тексту</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return html;
+        }
+
+        function renderDictionary() {
+            let html = `
+                <div class="space-y-6">
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Персональный справочник</h2>
+                            <p class="text-sm text-slate-400 mt-1">Все сохраненные слова и фразы с переводами и статусами.</p>
+                        </div>
+                        <button onclick="clearDictionary()" class="text-xs bg-slate-700 hover:bg-rose-900/50 hover:text-rose-400 text-slate-300 px-4 py-2 rounded-xl transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Очистить справочник
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+            `;
+
+            const words = Object.entries(state.dictionary);
+            if (words.length === 0) {
+                html += `<div class="text-center py-12 text-slate-400"><p>Справочник пуст.</p></div>`;
+            } else {
+                html += `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">`;
+                words.forEach(([word, data]) => {
+                    const cfg = colorsConfig[data.color] || colorsConfig['wordWhite'];
+                    html += `
+                        <div class="bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-col justify-between space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="font-bold text-white text-base">${escapeHtml(word)}</span>
+                                    <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(data.translation || '—')}</p>
+                                </div>
+                                <select onchange="updateWordColorInDict('${escapeHtml(word)}', this.value)" class="text-xs bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white">
+                    `;
+                    for (const [cKey, cCfg] of Object.entries(colorsConfig)) {
+                        html += `<option value="${cKey}" ${data.color === cKey ? 'selected' : ''}>${cCfg.name}</option>`;
+                    }
+                    html += `
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center pt-1 text-[11px] border-t border-slate-800">
+                                <span class="px-2 py-0.5 rounded ${cfg.bg}">${cfg.name}</span>
+                                <button onclick="deleteWordFromDict('${escapeHtml(word)}')" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function handleSaveText(e) {
+            e.preventDefault();
+            const title = document.getElementById('newTextTitle').value.trim();
+            const content = document.getElementById('newTextContent').value;
+            if (!title || !content) return;
+
+            const newText = { id: 'text-' + Date.now(), title, content, createdAt: new Date().toISOString() };
+            state.texts.unshift(newText);
+            saveState();
+            router.navigate('reader', newText.id);
+        }
+
+        function promptAppendText(id) {
+            const added = prompt('Вставьте дополнительный текст для этого урока:');
+            if (added && added.trim()) {
+                const textObj = state.texts.find(t => t.id === id);
+                if (textObj) {
+                    textObj.content += '\n\n' + added.trim();
+                    saveState();
+                    render();
+                }
+            }
+        }
+
+        function deleteText(id) {
+            if (confirm('Удалить этот урок?')) {
+                state.texts = state.texts.filter(t => t.id !== id);
+                saveState();
+                render();
+            }
+        }
+
+        function setBrushColor(colorKey) {
+            state.activeBrushColor = colorKey;
+            render();
+        }
+
+        function changePage(delta) {
+            stopSpeech();
+            state.currentPage += delta;
+            state.currentWordIdxInPage = 0;
+            state.elapsedSeconds = 0;
+            render();
+            window.scrollTo({ top: 100, behavior: 'smooth' });
+        }
+
+        function changeSpeed(val) {
+            state.playbackRate = parseFloat(val);
+            if (state.isPlaying) {
+                stopSpeech();
+                startSpeechFromIndex(state.currentWordIdxInPage);
+            } else {
+                render();
+            }
+        }
+
+        function seekAudioProgress(event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const percent = Math.max(0, Math.min(1, clickX / rect.width));
+            
+            state.elapsedSeconds = Math.round(percent * state.estimatedTotalSec);
+            state.currentWordIdxInPage = Math.floor(percent * (state.totalWordsInPage || 1));
+            
+            if (state.isPlaying) {
+                stopSpeech();
+                startSpeechFromIndex(state.currentWordIdxInPage);
+            } else {
+                highlightWordByPos(state.currentWordIdxInPage);
+                updateProgressBarUI();
+            }
+        }
+
+        function handleWordClick(event, wordIndex, word) {
+            event.stopPropagation();
+            const clean = word.toLowerCase();
+
+            if (state.activeBrushColor !== null) {
+                let item = state.dictionary[clean] || { color: state.activeBrushColor, translation: '' };
+                item.color = state.activeBrushColor;
+                state.dictionary[clean] = item;
+                saveState();
+                render();
+            } else {
+                speakSingleWord(word);
+                openTranslationModal(event.pageX, event.pageY, word);
+            }
+        }
+
+        function initReaderHandlers() {
+            const textBox = document.getElementById('readerTextBox');
+            if (textBox) {
+                document.addEventListener('mouseup', (e) => {
+                    const modal = document.getElementById('translationModal');
+                    if (modal && modal.contains(e.target)) return;
+
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+
+                    if (text.length > 1 && state.activeBrushColor === null) {
+                        openTranslationModal(e.pageX, e.pageY, text);
+                    }
+                });
+            }
+        }
+
+        async function openTranslationModal(x, y, text) {
+            const modal = document.getElementById('translationModal');
+            const srcText = document.getElementById('transSourceText');
+            const resText = document.getElementById('transResultText');
+            const idiomBox = document.getElementById('idiomExplanationBox');
+            const idiomText = document.getElementById('idiomExplanationText');
+            const pickers = document.getElementById('modalColorPickers');
+
+            const cleanPhrase = text.trim().toLowerCase();
+            state.modalTargetWord = cleanPhrase;
+            srcText.textContent = text;
+            resText.textContent = 'Перевод...';
+
+            modal.style.top = Math.min(y + 10, window.innerHeight - 250) + 'px';
+            modal.style.left = Math.min(x, window.innerWidth - 340) + 'px';
+            modal.classList.remove('hidden');
+
+            pickers.innerHTML = '';
+            for (const [cKey, cCfg] of Object.entries(colorsConfig)) {
+                pickers.innerHTML += `
+                    <button onclick="setModalWordColor('${cKey}')" class="text-[10px] p-1.5 rounded ${cCfg.bg} font-medium text-center truncate">${cCfg.name}</button>
+                `;
+            }
+
+            if (commonIdioms[cleanPhrase]) {
+                idiomBox.classList.remove('hidden');
+                idiomText.textContent = commonIdioms[cleanPhrase];
+            } else {
+                idiomBox.classList.add('hidden');
+            }
+
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ru`);
+                const data = await res.json();
+                if (data && data.responseData) {
+                    const translation = data.responseData.translatedText;
+                    resText.textContent = translation;
+                    
+                    let item = state.dictionary[cleanPhrase] || { color: 'wordWhite', translation: '' };
+                    item.translation = translation;
+                    state.dictionary[cleanPhrase] = item;
+                    saveState();
+                }
+            } catch (err) {
+                resText.textContent = 'Ошибка перевода';
+            }
+        }
+
+        function setModalWordColor(colorKey) {
+            if (state.modalTargetWord) {
+                let item = state.dictionary[state.modalTargetWord] || { color: colorKey, translation: '' };
+                item.color = colorKey;
+                state.dictionary[state.modalTargetWord] = item;
+                saveState();
+                closeTranslationModal();
+                render();
+            }
+        }
+
+        function closeTranslationModal() {
+            const modal = document.getElementById('translationModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // --- Robust Speech Engine & Karaoke Tracker ---
+
+        function getBritishVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
+        }
+
+        function togglePlay() {
+            if (state.isPlaying) stopSpeech();
+            else startSpeechFromIndex(state.currentWordIdxInPage);
+        }
+
+        function startSpeechFromIndex(startIndex) {
+            const textObj = state.texts.find(t => t.id === state.activeTextId);
+            if (!textObj) return;
+
+            const pages = getPagesForText(textObj.content);
+            const currentPageText = pages[state.currentPage - 1] || '';
+
+            if (!currentPageText.trim()) return;
+
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(currentPageText);
+            utterance.rate = state.playbackRate;
+            
+            const voice = getBritishVoice();
+            if (voice) utterance.voice = voice;
+
+            let wordCounter = startIndex;
+
+            // Direct karaoke boundary highlighting
+            utterance.onboundary = (e) => {
+                if (e.name === 'word') {
+                    // Find matching word by character index offset
+                    const match = state.wordCharOffsets.find(o => e.charIndex >= o.charStart && e.charIndex <= o.charEnd);
+                    if (match) {
+                        wordCounter = match.wordIdx;
+                    } else {
+                        wordCounter++;
+                    }
+                    state.currentWordIdxInPage = wordCounter;
+                    highlightWordByPos(wordCounter);
+                }
+            };
+
+            utterance.onstart = () => {
+                state.isPlaying = true;
+                updatePlayBtnUI();
+
+                // Live timer for smooth progress bar & clock updates
+                if (state.speechTimer) clearInterval(state.speechTimer);
+                state.speechTimer = setInterval(() => {
+                    if (state.isPlaying) {
+                        state.elapsedSeconds += 1;
+                        if (state.elapsedSeconds > state.estimatedTotalSec) {
+                            state.estimatedTotalSec = state.elapsedSeconds;
+                        }
+                        // Progressively advance word index if browser boundary event misses
+                        if (state.totalWordsInPage > 0) {
+                            state.currentWordIdxInPage = Math.min(state.totalWordsInPage - 1, Math.floor((state.elapsedSeconds / state.estimatedTotalSec) * state.totalWordsInPage));
+                            highlightWordByPos(state.currentWordIdxInPage);
+                        }
+                        updateProgressBarUI();
+                    }
+                }, 1000 / state.playbackRate);
+            };
+
+            utterance.onend = () => {
+                stopSpeech();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakSingleWord(word) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.rate = state.playbackRate;
+            const voice = getBritishVoice();
+            if (voice) utterance.voice = voice;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (state.speechTimer) clearInterval(state.speechTimer);
+            state.isPlaying = false;
+            clearWordHighlight();
+            updatePlayBtnUI();
+        }
+
+        function audioRewind(seconds) {
+            stopSpeech();
+            state.elapsedSeconds = Math.max(0, Math.min(state.estimatedTotalSec, state.elapsedSeconds + seconds));
+            state.currentWordIdxInPage = Math.floor((state.elapsedSeconds / (state.estimatedTotalSec || 1)) * state.totalWordsInPage);
+            startSpeechFromIndex(state.currentWordIdxInPage);
+        }
+
+        function updatePlayBtnUI() {
+            const btn = document.getElementById('playIcon');
+            if (btn) btn.className = state.isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+        }
+
+        function updateProgressBarUI() {
+            const bar = document.getElementById('audioProgressBar');
+            const timeDisplay = document.getElementById('currentTimeDisplay');
+            
+            if (bar) {
+                const pct = Math.min(100, (state.elapsedSeconds / (state.estimatedTotalSec || 1)) * 100);
+                bar.style.width = pct + '%';
+            }
+            if (timeDisplay) {
+                timeDisplay.textContent = formatTime(state.elapsedSeconds);
+            }
+        }
+
+        function highlightWordByPos(idx) {
+            clearWordHighlight();
+            const el = document.querySelector(`[data-word-idx="${idx}"]`);
+            if (el) {
+                el.classList.add('word-active');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function clearWordHighlight() {
+            document.querySelectorAll('.word-badge').forEach(el => el.classList.remove('word-active'));
+        }
+
+        function updateWordColorInDict(word, colorKey) {
+            if (state.dictionary[word]) {
+                state.dictionary[word].color = colorKey;
+                saveState();
+                render();
+            }
+        }
+
+        function deleteWordFromDict(word) {
+            delete state.dictionary[word];
+            saveState();
+            render();
+        }
+
+        function clearDictionary() {
+            if (confirm('Очистить весь справочник?')) {
+                state.dictionary = {};
+                saveState();
+                render();
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => getBritishVoice();
+
+        render();
+    </script>
+<a href="index.html">Перейти на главную страницу</a>
+</body>
+</html>
