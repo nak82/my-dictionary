@@ -1,896 +1,923 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Audio & Reading Trainer</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        wordWhite: 'transparent',
-                        wordKnownGreen: '#22c55e',
-                        wordGreen: '#10b981',
-                        wordBlue: '#3b82f6',
-                        wordYellow: '#f59e0b',
-                        wordRed: '#ef4444',
-                        wordPink: '#fbcfe8',
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .word-badge {
-            transition: all 0.15s ease;
-            cursor: pointer;
-            padding: 1px 3px;
-            margin: 1px 0px;
-            border-radius: 4px;
-            display: inline;
-            user-select: text;
-            -webkit-user-select: text;
-            font-size: 17px;
-        }
-        .word-badge:hover {
-            opacity: 0.85;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
-        }
-        .word-active {
-            outline: 2px solid #2563eb !important;
-            background-color: #3b82f6 !important;
-            color: #ffffff !important;
-            font-weight: bold;
-            border-radius: 4px;
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-        }
-        .paragraph-block {
-            margin-bottom: 1.5rem;
-            line-height: 2.2rem;
-            font-size: 17px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>British English Vocabulary Lab</title>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+:root{--navy:#17324d;--blue:#2864ad;--bg:#f3f6fa;--line:#d8e0ea;--muted:#617187}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#243247;font:16px/1.35 Arial,sans-serif}
+header{background:var(--navy);color:white;padding:5px max(10px,calc((100% - 1200px)/2));position:sticky;top:0;z-index:90}
+.header-layout{max-width:1200px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.header-brand{flex:0 0 auto}
+header h1{margin:0;font-size:1.05rem}header p{margin:0;color:#dbe6f1;font-size:.7rem}
+nav{display:flex;gap:6px;flex-wrap:wrap;max-width:1200px;margin:0 auto;padding:6px 10px;align-items:center;background:var(--bg);position:sticky;top:43px;z-index:85;border-bottom:1px solid var(--line)}
+nav button,.btn{border:1px solid #c8d3e0;border-radius:6px;background:#fff;padding:6px 10px;cursor:pointer;font-size:14px;color:#21354c}
+nav button.active,.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+button:hover{filter:brightness(.97)}button:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1200px;margin:0 auto;padding:0 10px 20px}.view{display:none}.view.active{display:block}
+.card{background:white;border:1px solid #e1e7ef;border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 4px #12243a08}
+h2{font-size:1.05rem;margin:0 0 6px}h3{margin:0 0 4px;font-size:0.9rem}
+label{font-weight:700;display:block;margin:4px 0 2px;font-size:0.8rem}
+input,textarea,select{width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;font:inherit;background:white;color:#243247;font-size:14px}
+textarea{min-height:100px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1}
+.small{font-size:.8rem;color:var(--muted)}.muted{color:var(--muted)}
+.lesson-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.lesson-card{border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}
+.lesson-card h3{font-size:0.95rem}.lesson-card p{margin:2px 0}
+.statline{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+.stat{background:#f4f7fb;border:1px solid #e0e6ee;border-radius:6px;padding:4px 8px;min-width:90px}
+.stat strong{display:block;font-size:1rem}
+.stat span{font-size:.7rem}
+.colors{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.color-choice{border:2px solid transparent;border-radius:6px;padding:4px 2px;cursor:pointer;text-align:center;min-height:40px;font-size:0.7rem}
+.color-choice strong{display:block;font-size:0.9rem}.color-choice small{display:block;font-size:0.55rem}
+.color-choice.selected{outline:2px solid #172b4d;outline-offset:1px}
+
+/* Цвета уровней и служебные кнопки */
+.c5{background:#39e639;color:#102510}
+.c4{background:#176b32;color:white}
+.c3{background:#2878e8;color:white}
+.c2{background:#ffe34d;color:#332900}
+.c1{background:#e53935;color:white}
+.csym{background:#cbd5e1;color:#1e293b}
+.cclear{background:#fff;color:#dc2626;border:1px dashed #dc2626}
+
+.player-controls{display:flex;gap:4px;flex-wrap:nowrap;align-items:center}
+.player-controls button{border:1px solid #cbd5e1;border-radius:5px;background:white;padding:4px 8px;cursor:pointer;font-size:0.75rem}
+.player-controls .primary{background:var(--blue);color:white}
+
+.reading-text{font-size:var(--reading-font-size, 1.1rem);line-height:1.4;word-break:break-word}
+.paragraph-block{margin-bottom:0.4rem;text-indent:1.2em;}
+
+.word{border-radius:3px;padding:1px 2px;cursor:pointer;outline:1px solid #d0dbe8;background:#fafbfc;color:#243247}
+.word:hover{outline:1px solid #2864ad !important;background:#eef4ff !important}
+.word.active-sentence{background:#e8f0fe !important;box-shadow:inset 0 -3px #2864ad}
+
+.word.c5{background:#39e639;color:#102510}
+.word.c4{background:#176b32;color:white}
+.word.c3{background:#2878e8;color:white}
+.word.c2{background:#ffe34d;color:#332900}
+.word.c1{background:#e53935;color:white}
+.word.csym{background:#cbd5e1;color:#1e293b;outline:none}
+
+body.clean-mode .word {
+    outline: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: #243247 !important;
+}
+body.clean-mode .word.c5,
+body.clean-mode .word.c4,
+body.clean-mode .word.c3,
+body.clean-mode .word.c2,
+body.clean-mode .word.c1,
+body.clean-mode .word.csym {
+    background: transparent !important;
+    color: #243247 !important;
+}
+body.clean-mode .word:hover {
+    background: #eef4ff !important;
+    outline: 1px dashed #2864ad !important;
+    padding: 1px 2px !important;
+}
+body.clean-mode .word.active-sentence {
+    background: #e8f0fe !important;
+    box-shadow: inset 0 -3px #2864ad;
+}
+
+.translation-box{background:#f0f6ff;border-left:4px solid var(--blue);border-radius:6px;padding:6px 10px;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between}
+.trans-content{flex:1}
+.trans-audio-btn{background:var(--blue);color:white;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-left:8px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #e5eaf0;padding:5px 6px;vertical-align:middle;font-size:0.85rem}
+.hidden{display:none!important}
+
+#navRatingPanel{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+body.lesson-open #navRatingPanel{display:flex}
+.nav-rating-title{font-size:.7rem;color:var(--muted);font-weight:700}
+#navRatingPanel #wordStats{display:flex;align-items:center;gap:3px;margin:0}
+#navRatingPanel .color-choice{width:28px;height:22px;min-height:22px;padding:1px;font-size:.45rem}
+#navRatingPanel .color-choice strong{font-size:.6rem}
+#navRatingPanel .color-choice small{font-size:.35rem}
+#finishBulk{font-size:.6rem;padding:2px 5px}
+.nav-bulk-status{font-size:.55rem;color:var(--muted);margin:0}
+
+.header-layout #playerCard{display:none}
+body.lesson-open .header-layout #playerCard{display:flex}
+#playerCard{padding:0;margin:0;background:transparent;border:0;box-shadow:none;color:white;gap:6px;align-items:center;justify-content:flex-end;flex:1;min-width:0}
+#playerCard h2,#playerCard #voiceInfo,#playerCard #playerStatus{display:none}
+#playerCard label{font-size:.65rem;margin:0 0 1px;color:#cbd5e1}
+#playerCard select,#playerCard input{font-size:.7rem;padding:2px 4px;border-radius:4px;height:26px}
+#playerCard .row{gap:4px;display:contents}
+#playerCard .voice-wrap{width:120px}
+#playerCard .speed-wrap{width:70px}
+#playerCard .settings-wrap{width:85px}
+
+#lessonDock{display:none;position:fixed;z-index:100;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #cbd5e1;box-shadow:0 -4px 15px #172b4d15;padding:4px max(100px,calc((100% - 1200px)/2));max-height:18vh;overflow-y:auto}
+body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:95px}
+#lessonDock #wordDetails{border-left:none;padding:2px 4px;min-height:unset}
+#lessonDock #wordDetails h3{display:inline;margin:0 6px 0 0;font-size:.85rem}
+#lessonDock #wordDetails p{display:inline;margin:0}
+
+.lesson-rating-card,.lesson-details-card{display:none!important}
+#lessonView>.card:first-child{padding:4px 10px;margin-bottom:6px}
+#lessonView>.card:first-child .row{gap:6px;flex-wrap:nowrap}
+#currentTitle{font-size:.9rem;margin:0;display:inline}
+#currentTopic{display:inline;font-size:.72rem;margin-left:6px}
+#lessonStats .stat{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;min-width:unset;margin:0 0 0 4px}
+#lessonStats .stat strong{display:inline;font-size:.7rem}
+#lessonStats .stat span{font-size:.6rem}
+#lessonView>.card:has(#readingText){padding:6px 10px;margin-bottom:6px}
+#lessonView>.card:has(#readingText) h2{display:none}
+.reading-controls-bar{display:flex;gap:12px;align-items:center;margin-bottom:3px;padding-bottom:2px;border-bottom:1px solid #edf2f8;font-size:0.75rem}
+.reading-controls-bar label{display:inline-flex;align-items:center;gap:4px;cursor:pointer;margin:0;font-weight:normal}
+.reading-controls-bar input[type="range"]{width:90px;padding:0;height:16px}
+</style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
-
-    <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="router.navigate('home')">
-                <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg">
-                    <i class="fa-solid fa-headphones-simple text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide">English Reader & Audio</h1>
-                    <p class="text-xs text-slate-400">Тренажер чтения и аудирования с умным словарем</p>
-                </div>
-            </div>
-            <nav class="flex items-center space-x-2 sm:space-x-4">
-                <button onclick="router.navigate('home')" class="px-3 py-2 rounded-lg text-sm font-medium transition hover:bg-slate-700 flex items-center space-x-2">
-                    <i class="fa-solid fa-book-open"></i>
-                    <span class="hidden sm:inline">Уроки</span>
-                </button>
-                <button onclick="router.navigate('dictionary')" class="px-3 py-2 rounded-lg text-sm font-medium transition hover:bg-slate-700 flex items-center space-x-2">
-                    <i class="fa-solid fa-list-check"></i>
-                    <span class="hidden sm:inline">Справочник</span>
-                </button>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
-        <div id="app"></div>
-    </main>
-
-    <!-- Floating Translation & Idiom Card -->
-    <div id="translationModal" class="hidden fixed z-50 bg-slate-800 border border-slate-600 shadow-2xl rounded-2xl p-4 w-80 text-slate-100 transition-all transform duration-150">
-        <div class="flex justify-between items-start border-b border-slate-700 pb-2 mb-2">
-            <div>
-                <h4 id="transSourceText" class="font-bold text-base text-blue-400 leading-tight">Word / Phrase</h4>
-                <p id="transResultText" class="text-sm text-emerald-400 font-medium mt-0.5">Перевод...</p>
-            </div>
-            <button onclick="closeTranslationModal()" class="text-slate-400 hover:text-white p-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        
-        <div id="idiomExplanationBox" class="hidden bg-slate-900 border border-slate-700 rounded-xl p-2.5 mb-3 text-xs text-slate-300 space-y-1">
-            <span class="text-amber-400 font-bold flex items-center"><i class="fa-solid fa-lightbulb mr-1.5"></i> Контекст / Фразовый глагол:</span>
-            <p id="idiomExplanationText" class="leading-relaxed text-[11px] text-slate-400"></p>
-        </div>
-
-        <div class="space-y-2">
-            <p class="text-[11px] text-slate-400 font-medium">Присвоить цвет/статус:</p>
-            <div class="grid grid-cols-3 gap-1.5" id="modalColorPickers"></div>
-        </div>
+<body>
+<header>
+  <div class="header-layout">
+    <div class="header-brand">
+      <h1>British English Vocabulary Lab</h1>
+      <p>Listen · Read · Rate · Dictionary</p>
     </div>
+    <div id="playerCard">
+      <div class="voice-wrap"><label for="voiceSelect">Voice</label><select id="voiceSelect"></select></div>
+      <div class="speed-wrap"><label for="speed">Speed <span id="speedLabel">0.8×</span></label><input id="speed" type="range" min="0.5" max="1.2" step="0.1" value="0.8"></div>
+      <div class="settings-wrap"><label for="sentenceMode">Mode</label><select id="sentenceMode"><option value="continuous">Continuous</option><option value="single">One sentence</option></select></div>
+      <div class="player-controls">
+        <button id="previousSentence" title="Previous">⏮</button>
+        <button id="repeatSentence" title="Repeat">↺</button>
+        <button id="playAudio" class="primary" title="Play">▶</button>
+        <button id="pauseAudio" title="Pause">⏸</button>
+        <button id="stopAudio" title="Stop">⏹</button>
+        <button id="nextSentence" title="Next">⏭</button>
+      </div>
+      <p id="playerStatus" class="small hidden">Ready</p>
+    </div>
+  </div>
+</header>
+<nav>
+  <div class="row" style="gap:6px;flex:0 0 auto">
+    <button class="active" data-view="lessonsView">Lessons</button>
+    <button data-view="lessonView" id="navCurrent" disabled>Open lesson</button>
+    <button data-view="dictionaryView">Dictionary</button>
+    <button data-view="statsView">Stats & Backup</button>
+  </div>
+  <div id="navRatingPanel" aria-label="Word rating and colour statistics">
+    <span class="nav-rating-title">Colours:</span>
+    <div id="wordStats" class="statline"></div>
+    <button class="btn" id="finishBulk">Done</button>
+    <span id="bulkStatus" class="nav-bulk-status"></span>
+  </div>
+</nav>
+<main>
+<section id="lessonsView" class="view active">
+  <div class="card">
+    <h2>Create a lesson</h2>
+    <label for="lessonTitle">Lesson title</label><input id="lessonTitle" placeholder="e.g. A day at work">
+    <label for="lessonTopic">Topic</label><input id="lessonTopic" placeholder="e.g. Daily routine, travel">
+    <label for="lessonText">English text (paragraphs are preserved)</label><textarea id="lessonText" placeholder="Paste your English text here..."></textarea>
+    <div class="row" style="margin-top:6px">
+      <button class="btn primary" id="createLesson">Create lesson</button>
+      <button class="btn" id="resetLessonForm">Clear form</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Lessons</h2>
+    <div id="lessonList" class="lesson-list"></div>
+  </div>
+</section>
 
-    <!-- Footer -->
-    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-400">
-        <p>English Audio & Reading Platform &bull; Синтез речи (Web Speech API)</p>
-    </footer>
+<section id="lessonView" class="view">
+  <div class="card">
+    <div class="row">
+      <div><h2 id="currentTitle">Lesson</h2><span id="currentTopic" class="small"></span><span id="lessonStats" class="statline"></span></div>
+      <button class="btn" id="backToLessons" style="flex:0 0 auto;padding:4px 8px;font-size:0.75rem">← Lessons</button>
+    </div>
+  </div>
+  <div class="card lesson-rating-card"><div id="colorPanel" class="colors"></div></div>
+  <div class="card" style="padding:6px 12px">
+    <div class="reading-controls-bar">
+      <label><input type="checkbox" id="cleanModeToggle" checked> Цвет</label>
+      <label style="margin-left:10px">Шрифт: <input type="range" id="fontSizeRange" min="0.9" max="1.6" step="0.05" value="1.1"><span id="fontSizeLabel">1.1rem</span></label>
+      <span class="small muted" style="margin-left:auto" id="dockSentenceCount"></span>
+    </div>
+    <h2>Reading text</h2>
+    <div id="readingText" class="reading-text"></div>
+  </div>
+  <div class="card lesson-details-card">
+    <h2>Word details</h2>
+    <div id="wordDetails" class="translation-box">
+      <div class="trans-content">Click a word in the text to view its translation, or select multiple words.</div>
+    </div>
+  </div>
+</section>
 
-    <!-- Logic Script -->
-    <script>
-        const STORAGE_KEY_TEXTS = 'eng_reader_texts_v6';
-        const STORAGE_KEY_DICT = 'eng_reader_dict_v6';
-        const CHARS_PER_PAGE = 1000;
+<section id="dictionaryView" class="view">
+  <div class="card">
+    <h2>My dictionary</h2>
+    <p class="small">В словаре хранятся только слова с назначенными цветами (1–5 уровни).</p>
+    <label for="dictionarySearch">Search word</label><input id="dictionarySearch" placeholder="Type an English word...">
+    <label for="dictionaryFilter">Filter by rating</label>
+    <select id="dictionaryFilter">
+      <option value="all">All ratings</option>
+    </select>
+    <div id="dictionarySummary" class="statline"></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:20%">Слово</th>
+            <th style="width:25%">Основной перевод</th>
+            <th style="width:30%">Дополнительный перевод</th>
+            <th style="width:15%">Степень</th>
+            <th style="width:10%">Действия</th>
+          </tr>
+        </thead>
+        <tbody id="dictionaryRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
-        let state = {
-            currentRoute: 'home',
-            activeTextId: null,
-            currentPage: 1,
-            texts: JSON.parse(localStorage.getItem(STORAGE_KEY_TEXTS)) || [
-                {
-                    id: 'sample-1',
-                    title: 'The Secret of Edinburgh Castle',
-                    content: `Edinburgh Castle is a historic fortress which dominates the skyline of the city of Edinburgh, Scotland, from its position on the volcanic Castle Rock.\n\nArchaeologists have established human occupation of the rock since the Iron Age, although the nature of the early settlement is unclear. There has been a royal castle on the rock since at least the reign of David I in the 12th century, and the site continued to be a royal residence until 1633.\n\nFrom the 15th century, the castle's residential role declined, and by the 17th century it was principally used as military barracks with a large garrison. Looking forward to your visit, you will find it hard to give up exploring its ancient halls.`,
-                    createdAt: new Date().toISOString()
-                }
-            ],
-            dictionary: JSON.parse(localStorage.getItem(STORAGE_KEY_DICT)) || {},
-            activeBrushColor: null,
-            isPlaying: false,
-            currentWordIdxInPage: 0,
-            totalWordsInPage: 0,
-            playbackRate: 1.0,
-            volume: 1.0,
-            modalTargetWord: '',
-            speechTimer: null,
-            elapsedSeconds: 0,
-            estimatedTotalSec: 0,
-            wordCharOffsets: [] // Хранит символьные смещения для идеальной синхронизации караоке
-        };
+<section id="statsView" class="view">
+  <div class="card"><h2>Overall statistics</h2><div id="overallStats" class="statline"></div><div id="ratingTotals" class="colors"></div></div>
+  <div class="card">
+    <h2>Backup and restore</h2>
+    <div class="row"><button class="btn primary" id="exportData">Export backup (.json)</button><label class="btn" style="text-align:center;cursor:pointer">Import backup (.json)<input id="importData" type="file" accept=".json,application/json" style="display:none"></label></div>
+    <p id="backupStatus" class="small"></p>
+  </div>
+</section>
+</main>
 
-        function saveState() {
-            localStorage.setItem(STORAGE_KEY_TEXTS, JSON.stringify(state.texts));
-            localStorage.setItem(STORAGE_KEY_DICT, JSON.stringify(state.dictionary));
+<script>
+"use strict";
+
+const firebaseConfig = {
+  databaseURL: "https://english-vocabulary-lab-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+(function setupLessonDock(){
+  const ratingCard=document.getElementById("colorPanel").closest(".card");
+  const detailCard=document.getElementById("wordDetails").closest(".card");
+  if(ratingCard) ratingCard.classList.add("lesson-rating-card");
+  if(detailCard) detailCard.classList.add("lesson-details-card");
+  const dock=document.createElement("div");dock.id="lessonDock";
+  dock.innerHTML='<div id="wordDetails" class="translation-box"><div class="trans-content" id="dockWordDetails"></div></div>';
+  document.body.appendChild(dock);
+  const colors=document.getElementById("colorPanel");
+  if(colors) { colors.classList.remove("colors"); colors.classList.add("colors"); }
+  const playerCard = document.getElementById("playerCard");
+  if(playerCard) document.querySelector(".header-layout").appendChild(playerCard);
+  const wordStats = document.getElementById("wordStats");
+  if(wordStats) document.getElementById("navRatingPanel").appendChild(wordStats);
+  const finishBulk = document.getElementById("finishBulk");
+  if(finishBulk) document.getElementById("navRatingPanel").appendChild(finishBulk);
+  const bulkStatus = document.getElementById("bulkStatus");
+  if(bulkStatus) document.getElementById("navRatingPanel").appendChild(bulkStatus);
+})();
+
+const RATINGS = [
+  {value:5,label:"5 · Know very well",cls:"c5"},
+  {value:4,label:"4 · Know well",cls:"c4"},
+  {value:3,label:"3 · Learning",cls:"c3"},
+  {value:2,label:"2 · Know a little",cls:"c2"},
+  {value:1,label:"1 · Do not know",cls:"c1"},
+  {value:"sym",label:"Символ",cls:"csym"},
+  {value:0,label:"Убрать цвет",cls:"cclear"}
+];
+
+let state = {
+  lessons: [],
+  words: {}
+};
+
+// Загружаем предварительно из localStorage для мгновенного доступа
+try {
+  const localCache = localStorage.getItem("vocabLabLocalState");
+  if(localCache) {
+    const parsed = JSON.parse(localCache);
+    if(parsed.lessons) state.lessons = parsed.lessons;
+    if(parsed.words) state.words = parsed.words;
+  }
+} catch(e) { console.warn("Local cache read error"); }
+
+let currentLessonId = null, currentSentence = 0, isPlaying = false, isPaused = false, activeWord = null, activeContext = "";
+let utteranceRun = 0, voices = [], bulkRating = null, bulkMode = false;
+let selectedBulkWords = new Set(), translationCache = new Map();
+
+function uid(){return "l_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8)}
+
+function initCloudSync(){
+  db.ref("vocabularyLab").once("value", (snapshot)=>{
+    const cloudData = snapshot.val();
+    if(cloudData){
+      if(Array.isArray(cloudData.lessons) && cloudData.lessons.length >= state.lessons.length) {
+        state.lessons = cloudData.lessons;
+      }
+      if(cloudData.words && Object.keys(cloudData.words).length >= Object.keys(state.words).length) {
+        state.words = cloudData.words;
+      }
+      saveLocal();
+    }
+    renderLessons();
+    renderDictionary();
+    renderOverallStats();
+  }, (error)=>{
+    console.warn("Cloud sync offline mode, using local storage.");
+    renderLessons();
+    renderDictionary();
+    renderOverallStats();
+  });
+}
+
+function saveLocal(){
+  try {
+    localStorage.setItem("vocabLabLocalState", JSON.stringify(state));
+  } catch(e) { console.warn("Local storage write error"); }
+}
+
+function saveState(){
+  saveLocal();
+  db.ref("vocabularyLab").set(state).catch((e)=>{
+    console.warn("Cloud save skipped (file:// mode)");
+  });
+}
+
+function showView(id){
+  document.body.classList.toggle("lesson-open",id==="lessonView");
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
+  document.querySelectorAll("nav button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
+  if(id==="lessonsView") renderLessons();
+  if(id==="dictionaryView") renderDictionary();
+  if(id==="statsView") renderOverallStats();
+}
+document.querySelectorAll("nav button[data-view]").forEach(b=>b.addEventListener("click",()=>{if(!b.disabled)showView(b.dataset.view)}));
+function getLesson(){return state.lessons.find(l=>l.id===currentLessonId)||null}
+
+function splitSentences(source){
+  if(typeof Intl.Segmenter==="function"){
+    return Array.from(new Intl.Segmenter("en-GB",{granularity:"sentence"}).segment(source)).map(x=>x.segment.trim()).filter(Boolean);
+  }
+  return (source.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g)||[source]).map(x=>x.trim()).filter(Boolean);
+}
+function tokens(source){return source.match(/\b[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*\b/gu)||[]}
+function wordKey(word){return word.toLocaleLowerCase("en-GB").replace(/’/g,"'")}
+
+function setWordRating(word, rating, newTranslation=""){
+  const key=wordKey(word);
+  if(rating === 0 || rating === "0"){
+    delete state.words[key];
+    saveState();
+    return null;
+  }
+  let rec = state.words[key] || { word: word, translation: "", altTranslations: "", rating: 3, updatedAt: null };
+  rec.rating = rating;
+  rec.updatedAt = new Date().toISOString();
+  if(newTranslation && rating !== "sym"){
+    if(!rec.translation){
+      rec.translation = newTranslation;
+    } else if(rec.translation.toLowerCase() !== newTranslation.toLowerCase()){
+      let alts = rec.altTranslations ? rec.altTranslations.split(", ").map(s=>s.trim()) : [];
+      if(!alts.includes(newTranslation) && rec.translation.toLowerCase() !== newTranslation.toLowerCase()){
+        alts.push(newTranslation);
+        rec.altTranslations = alts.join(", ");
+      }
+    }
+  }
+  state.words[key] = rec;
+  saveState();
+  return rec;
+}
+
+function lessonWordStats(lesson){
+  const all=tokens(lesson.text), unique=new Set(all.map(wordKey));
+  return {total:all.length,unique:unique.size};
+}
+function ratingInfo(value){
+  return RATINGS.find(r=>r.value===value)||{cls:"c0",label:"Not rated"};
+}
+
+function renderLessons(){
+  const root=document.getElementById("lessonList");
+  if(!root) return;
+  root.replaceChildren();
+  if(!state.lessons.length){root.textContent="No lessons yet. Create your first lesson above.";return}
+  state.lessons.forEach(lesson=>{
+    const stats=lessonWordStats(lesson), card=document.createElement("article");card.className="lesson-card";
+    const h=document.createElement("h3");h.textContent=lesson.title;card.appendChild(h);
+    const topic=document.createElement("p");topic.className="small";topic.textContent=lesson.topic||"No topic";card.appendChild(topic);
+    const metrics=document.createElement("div");metrics.className="statline";
+    metrics.appendChild(makeStat("Total words",stats.total));metrics.appendChild(makeStat("Unique words",stats.unique));card.appendChild(metrics);
+    const open=document.createElement("button");open.className="btn primary";open.textContent="Open";open.addEventListener("click",()=>openLesson(lesson.id));card.appendChild(open);
+    const edit=document.createElement("button");edit.className="btn";edit.textContent="Edit";edit.style.marginLeft="4px";edit.addEventListener("click",()=>editLesson(lesson.id));card.appendChild(edit);
+    const del=document.createElement("button");del.className="btn";del.textContent="Delete";del.style.marginLeft="4px";del.addEventListener("click",()=>deleteLesson(lesson.id));card.appendChild(del);
+    root.appendChild(card);
+  });
+}
+function makeStat(label,value){const d=document.createElement("div");d.className="stat";const s=document.createElement("strong");s.textContent=value;const t=document.createElement("span");t.className="small";t.textContent=label;d.append(s,t);return d}
+
+function clearLessonForm(){
+  document.getElementById("lessonTitle").value="";
+  document.getElementById("lessonTopic").value="";
+  document.getElementById("lessonText").value="";
+  delete document.getElementById("createLesson").dataset.editing;
+}
+const resetBtn = document.getElementById("resetLessonForm");
+if(resetBtn) resetBtn.addEventListener("click",clearLessonForm);
+
+const createBtn = document.getElementById("createLesson");
+if(createBtn) createBtn.addEventListener("click",()=>{
+  const title=document.getElementById("lessonTitle").value.trim();
+  const topic=document.getElementById("lessonTopic").value.trim();
+  const text=document.getElementById("lessonText").value.trim();
+  if(!title||!text){alert("Please enter a lesson title and text.");return}
+  const editId=createBtn.dataset.editing;
+  if(editId){
+    const lesson=state.lessons.find(l=>l.id===editId);
+    if(lesson){lesson.title=title;lesson.topic=topic;lesson.text=text;}
+    delete createBtn.dataset.editing;
+  } else {
+    state.lessons.push({id:uid(),title,topic,text,createdAt:new Date().toISOString()});
+  }
+  saveState();
+  clearLessonForm();
+  renderLessons();
+});
+
+function editLesson(id){
+  const l=state.lessons.find(x=>x.id===id);if(!l)return;
+  document.getElementById("lessonTitle").value=l.title;
+  document.getElementById("lessonTopic").value=l.topic||"";
+  document.getElementById("lessonText").value=l.text;
+  document.getElementById("createLesson").dataset.editing=id;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function deleteLesson(id){
+  const l=state.lessons.find(x=>x.id===id);if(!l)return;
+  if(!confirm(`Delete lesson “${l.title}”?`))return;
+  state.lessons=state.lessons.filter(x=>x.id!==id);
+  if(currentLessonId===id){stopAudio(true);currentLessonId=null;document.getElementById("navCurrent").disabled=true;document.body.classList.remove("lesson-open");}
+  saveState();
+  renderLessons();
+}
+
+function openLesson(id){
+  const l=state.lessons.find(x=>x.id===id);if(!l)return;document.body.classList.add("lesson-open");
+  stopAudio(true);currentLessonId=id;currentSentence=0;activeWord=null;activeContext="";bulkMode=false;bulkRating=null;selectedBulkWords.clear();
+  document.getElementById("navCurrent").disabled=false;document.getElementById("currentTitle").textContent=l.title;document.getElementById("currentTopic").textContent=l.topic||"";
+  renderLessonStats();renderColorPanel();renderReading();renderWordStats();showView("lessonView");document.getElementById("playerStatus").textContent="Ready";
+}
+function renderLessonStats(){
+  const l=getLesson();if(!l)return;
+  document.getElementById("dockSentenceCount").textContent=`Sentences: ${splitSentences(l.text).length}`;
+}
+function renderColorPanel(){
+  const root=document.getElementById("colorPanel");if(!root)return;root.replaceChildren();
+  RATINGS.forEach(r=>{
+    const b=document.createElement("button");b.type="button";b.className=`color-choice ${r.cls}`;
+    b.innerHTML=`<strong>${r.value === "sym" ? "Симв" : (r.value === 0 ? "✕" : r.value)}</strong><small>${r.label.split("·")[0]}</small>`;
+    b.addEventListener("click",()=>{
+      bulkRating=r.value;bulkMode=true;selectedBulkWords.clear();
+      document.querySelectorAll("#colorPanel .color-choice, #wordStats .color-choice").forEach(x=>x.classList.toggle("selected",x===b));
+      updateBulkStatus();
+    });
+    root.appendChild(b);
+  });
+}
+function updateBulkStatus(){
+  const statusEl=document.getElementById("bulkStatus");
+  if(statusEl){
+    statusEl.textContent=bulkMode?(bulkRating===0?"Mode: Clear":"Mode: "+bulkRating):"";
+  }
+}
+
+function renderReading(){
+  const l=getLesson();if(!l)return;const root=document.getElementById("readingText");if(!root)return;root.replaceChildren();
+  
+  const paragraphs = l.text.split(/\n\s*\n/);
+  let sentenceGlobalIndex = 0;
+  
+  paragraphs.forEach((para)=>{
+    const pEl = document.createElement("div");
+    pEl.className = "paragraph-block";
+    
+    const sentencesInPara = splitSentences(para);
+    
+    sentencesInPara.forEach((sentenceText)=>{
+      const sentenceSpan = document.createElement("span");
+      sentenceSpan.dataset.sentence = sentenceGlobalIndex++;
+      
+      const parts = sentenceText.match(/\s+|[^\s]+/g)||[];
+      parts.forEach(part=>{
+        if(/^\s+$/.test(part)){
+          sentenceSpan.appendChild(document.createTextNode(part));
+          return;
         }
-
-        const colorsConfig = {
-            wordWhite: { name: 'Незнакомо', bg: 'bg-transparent text-slate-200' },
-            wordKnownGreen: { name: 'Знаю', bg: 'bg-green-600 text-white font-medium px-1 rounded' },
-            wordGreen: { name: 'Закрепить', bg: 'bg-emerald-600 text-white px-1 rounded' },
-            wordBlue: { name: 'Учить', bg: 'bg-blue-600 text-white px-1 rounded' },
-            wordYellow: { name: 'Слышал', bg: 'bg-amber-500 text-slate-900 font-medium px-1 rounded' },
-            wordRed: { name: 'Не знаю', bg: 'bg-rose-600 text-white px-1 rounded' },
-            wordPink: { name: 'Игнорировать', bg: 'bg-pink-300 text-slate-900 px-1 rounded' }
-        };
-
-        const router = {
-            navigate(route, param = null) {
-                stopSpeech();
-                state.currentRoute = route;
-                if (param) {
-                    state.activeTextId = param;
-                    state.currentPage = 1;
-                }
-                closeTranslationModal();
-                render();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        };
-
-        const commonIdioms = {
-            "look forward to": "Фразовый глагол: 'очень ждать / предвкушать что-то'.",
-            "give up": "Фразовый глагол: 'бросать / сдаваться / прекращать делать что-то'.",
-            "carry on": "Фразовый глагол: 'продолжать делать что-то'.",
-            "find hard": "Устойчивое выражение: 'считать что-то сложным / трудным'."
-        };
-
-        function tokenizeText(text) {
-            const regex = /(\n\s*\n|[a-zA-ZÀ-ÿ'-]+|[0-9]+|[^\s\w]+|\s+)/g;
-            return text.match(regex) || [];
+        const word=document.createElement("span");word.className="word";word.textContent=part;
+        const clean=part.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");
+        if(clean){
+          const rec=state.words[wordKey(clean)]||{rating:0};
+          word.classList.add(ratingInfo(rec.rating).cls);
+          word.dataset.key=wordKey(clean);
+          word.dataset.word=clean;
+          if(selectedBulkWords.has(word.dataset.key))word.classList.add("selected-mass");
+          word.addEventListener("click",(event)=>onWordClick(clean,para,word,event));
         }
+        sentenceSpan.appendChild(word);
+      });
+      pEl.appendChild(sentenceSpan);
+      pEl.appendChild(document.createTextNode(" "));
+    });
+    root.appendChild(pEl);
+  });
+  highlightCurrentSentence();
+}
 
-        function getPagesForText(text) {
-            const paragraphs = text.split(/\n\s*\n/);
-            const pages = [];
-            let currentPageParas = [];
-            let currentChars = 0;
+function onWordClick(word,sentence,element,event){
+  const key=wordKey(word);
+  if(bulkMode){
+    activeWord=word;activeContext=sentence;
+    if(bulkRating === 0) {
+      setWordRating(word, 0);
+    } else {
+      translateAndSaveWord(word, sentence, bulkRating, bulkRating !== "sym");
+    }
+    selectedBulkWords.add(key);
+    renderReading();renderWordStats();renderDictionary();renderOverallStats();return;
+  }
+  activeWord=word;activeContext=sentence;
+  showWordDetails(word,sentence, true);
+}
 
-            paragraphs.forEach(p => {
-                if (currentChars + p.length > CHARS_PER_PAGE && currentPageParas.length > 0) {
-                    pages.push(currentPageParas.join('\n\n'));
-                    currentPageParas = [p];
-                    currentChars = p.length;
-                } else {
-                    currentPageParas.push(p);
-                    currentChars += p.length;
-                }
-            });
+document.addEventListener("selectionchange", () => {
+  const lessonView = document.getElementById("lessonView");
+  if (!lessonView || !lessonView.classList.contains("active")) return;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  
+  const selectedText = selection.toString().trim();
+  if (selectedText && selectedText.split(/\s+/).length > 1) {
+    activeWord = selectedText;
+    showWordDetails(selectedText, selectedText, false);
+  }
+});
 
-            if (currentPageParas.length > 0) {
-                pages.push(currentPageParas.join('\n\n'));
-            }
+function highlightCurrentSentence(){
+  document.querySelectorAll("#readingText [data-sentence]").forEach(el=>{
+    const isCurrent = Number(el.dataset.sentence) === currentSentence;
+    el.querySelectorAll(".word").forEach(w=>{
+      w.classList.toggle("active-sentence", isCurrent && isPlaying);
+    });
+  });
+}
 
-            return pages.length > 0 ? pages : [text];
+function renderWordStats(){
+  const l=getLesson();if(!l)return;
+  const unique=[...new Set(tokens(l.text).map(wordKey))],counts={5:0,4:0,3:0,2:0,1:0,sym:0};
+  unique.forEach(k=>{
+    const r=(state.words[k]||{rating:0}).rating;
+    if(counts[r]!==undefined) counts[r]++;
+  });
+  const root=document.getElementById("wordStats");if(!root)return;root.replaceChildren();
+  RATINGS.slice(0,5).forEach(r=>{
+    const b=document.createElement("button");b.type="button";b.className=`color-choice ${r.cls}`;
+    b.innerHTML=`<strong>${counts[r.value]}</strong><small>L${r.value}</small>`;
+    b.addEventListener("click",()=>{
+      bulkRating=r.value;bulkMode=true;selectedBulkWords.clear();
+      document.querySelectorAll("#colorPanel .color-choice, #wordStats .color-choice").forEach(x=>x.classList.toggle("selected",x===b));
+      updateBulkStatus();
+    });
+    root.appendChild(b);
+  });
+}
+
+function speakText(text){
+  if("speechSynthesis" in window){
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-GB";
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function updateTranslationBox(word, translation){
+  const containers = [document.getElementById("wordDetails"), document.getElementById("dockWordDetails")];
+  containers.forEach(box => {
+    if(!box) return;
+    box.replaceChildren();
+    
+    const content = document.createElement("div");
+    content.className = "trans-content";
+    const h = document.createElement("h3");
+    h.textContent = word;
+    const p = document.createElement("p");
+    p.textContent = translation;
+    content.append(h, p);
+    
+    const audioBtn = document.createElement("button");
+    audioBtn.className = "trans-audio-btn";
+    audioBtn.innerHTML = "🔊";
+    audioBtn.title = "Прослушать";
+    audioBtn.addEventListener("click", () => speakText(word));
+    
+    box.append(content, audioBtn);
+  });
+}
+
+async function translateAndSaveWord(word, sentence, ratingToApply = null, saveToDict = true){
+  const key = wordKey(word);
+  updateTranslationBox(word, "Translating…");
+  let translation = "Перевод недоступен";
+  
+  try{
+    if(translationCache.has(key)){
+      translation = translationCache.get(key);
+    } else {
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ru`);
+      if(res.ok){
+        const data = await res.json();
+        if(data && data.responseData && data.responseData.translatedText){
+          translation = data.responseData.translatedText;
+          translationCache.set(key, translation);
         }
-
-        function calculateLessonStats(textObj) {
-            const words = textObj.content.match(/[a-zA-ZÀ-ÿ]+/g) || [];
-            const totalWords = words.length;
-            const counts = { wordWhite: 0, wordKnownGreen: 0, wordGreen: 0, wordBlue: 0, wordYellow: 0, wordRed: 0, wordPink: 0 };
-            let learnedCount = 0;
-
-            words.forEach(w => {
-                const clean = w.toLowerCase();
-                const item = state.dictionary[clean];
-                if (item && colorsConfig[item.color]) {
-                    counts[item.color]++;
-                    if (item.color === 'wordKnownGreen' || item.color === 'wordGreen') {
-                        learnedCount++;
-                    }
-                } else {
-                    counts.wordWhite++;
-                }
-            });
-
-            return { totalWords, counts, learnedCount };
-        }
-
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-
-        function render() {
-            const app = document.getElementById('app');
-            app.innerHTML = '';
-
-            if (state.currentRoute === 'home') app.innerHTML = renderHome();
-            else if (state.currentRoute === 'add') app.innerHTML = renderAddText();
-            else if (state.currentRoute === 'reader') {
-                app.innerHTML = renderReader();
-                initReaderHandlers();
-            }
-            else if (state.currentRoute === 'dictionary') app.innerHTML = renderDictionary();
-        }
-
-        function renderHome() {
-            let html = `
-                <div class="space-y-6">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-                        <div>
-                            <h2 class="text-2xl font-bold text-white">Уроки чтения и аудирования</h2>
-                            <p class="text-sm text-slate-400 mt-1">Загружайте тексты, слушайте естественную речь и изучайте слова в контексте.</p>
-                        </div>
-                        <button onclick="router.navigate('add')" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg transition flex items-center space-x-2">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Добавить новый текст</span>
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 gap-4">
-            `;
-
-            if (state.texts.length === 0) {
-                html += `<div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-12 text-center text-slate-400"><p class="text-lg">Список уроков пуст.</p></div>`;
-            } else {
-                state.texts.forEach(t => {
-                    const stats = calculateLessonStats(t);
-                    const pages = getPagesForText(t.content);
-                    const learnedPercent = stats.totalWords > 0 ? Math.round((stats.learnedCount / stats.totalWords) * 100) : 0;
-
-                    html += `
-                        <div class="bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-2xl p-5 transition shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <div class="space-y-2 flex-grow cursor-pointer" onclick="router.navigate('reader', '${t.id}')">
-                                <h3 class="text-lg font-bold text-white hover:text-blue-400 transition">${escapeHtml(t.title)}</h3>
-                                <p class="text-sm text-slate-400 line-clamp-2">${escapeHtml(t.content)}</p>
-                                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
-                                    <span><i class="fa-solid fa-font mr-1"></i> Слов: <b>${stats.totalWords}</b></span>
-                                    <span><i class="fa-solid fa-graduation-cap mr-1"></i> Выучено (Знаю+Закрепить): <b>${learnedPercent}%</b></span>
-                                    <span><i class="fa-solid fa-file-lines mr-1"></i> Страниц: <b>${pages.length}</b></span>
-                                </div>
-                            </div>
-                            
-                            <div class="flex flex-col items-end gap-3 w-full md:w-auto">
-                                <div class="flex h-3 w-full md:w-52 bg-slate-700 rounded-full overflow-hidden shadow-inner">
-                                    <div style="width: ${(stats.counts.wordWhite/stats.totalWords)*100}%" class="bg-slate-600" title="Незнакомо"></div>
-                                    <div style="width: ${(stats.counts.wordKnownGreen/stats.totalWords)*100}%" class="bg-green-500" title="Знаю"></div>
-                                    <div style="width: ${(stats.counts.wordGreen/stats.totalWords)*100}%" class="bg-emerald-600" title="Закрепить"></div>
-                                    <div style="width: ${(stats.counts.wordBlue/stats.totalWords)*100}%" class="bg-blue-500" title="Учить"></div>
-                                    <div style="width: ${(stats.counts.wordYellow/stats.totalWords)*100}%" class="bg-amber-400" title="Слышал"></div>
-                                    <div style="width: ${(stats.counts.wordRed/stats.totalWords)*100}%" class="bg-rose-500" title="Не знаю"></div>
-                                    <div style="width: ${(stats.counts.wordPink/stats.totalWords)*100}%" class="bg-pink-300" title="Игнорировать"></div>
-                                </div>
-
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="router.navigate('reader', '${t.id}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-medium transition flex items-center space-x-1.5">
-                                        <i class="fa-solid fa-play"></i>
-                                        <span>Открыть урок</span>
-                                    </button>
-                                    <button onclick="deleteText('${t.id}')" class="bg-slate-700 hover:bg-rose-900/50 hover:text-rose-400 text-slate-300 text-xs p-2 rounded-lg transition">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            html += `</div></div>`;
-            return html;
-        }
-
-        function renderAddText() {
-            return `
-                <div class="max-w-2xl mx-auto bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
-                        <h2 class="text-xl font-bold text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-file-circle-plus text-blue-500"></i>
-                            <span>Добавить новый урок</span>
-                        </h2>
-                        <button onclick="router.navigate('home')" class="text-slate-400 hover:text-white transition">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                        </button>
-                    </div>
-
-                    <form onsubmit="handleSaveText(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-1">Название статьи или рассказа</label>
-                            <input type="text" id="newTextTitle" required placeholder="Например: BBC Article - Technology" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-1">Текст на английском (абзацы сохраняются)</label>
-                            <textarea id="newTextContent" required rows="9" placeholder="Вставьте текст статьи или рассказа..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-blue-500 transition"></textarea>
-                        </div>
-                        <div class="flex justify-end space-x-3 pt-2">
-                            <button type="button" onclick="router.navigate('home')" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition">Отмена</button>
-                            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition flex items-center space-x-2">
-                                <i class="fa-solid fa-check"></i>
-                                <span>Создать урок</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-        }
-
-        function renderReader() {
-            const textObj = state.texts.find(t => t.id === state.activeTextId);
-            if (!textObj) return `<div class="text-center py-12"><p>Урок не найден.</p></div>`;
-
-            const pages = getPagesForText(textObj.content);
-            if (state.currentPage > pages.length) state.currentPage = pages.length;
-
-            const currentPageContent = pages[state.currentPage - 1] || '';
-            const lessonStats = calculateLessonStats(textObj);
-            const paragraphs = currentPageContent.split(/\n\s*\n/);
-
-            const wordsInCurrentPage = currentPageContent.match(/[a-zA-ZÀ-ÿ]+/g) || [];
-            state.totalWordsInPage = wordsInCurrentPage.length;
-            state.estimatedTotalSec = Math.max(1, Math.round((state.totalWordsInPage / 2.3) / state.playbackRate));
-
-            let html = `
-                <div class="space-y-6">
-                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl shadow-lg flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                        <div>
-                            <button onclick="router.navigate('home')" class="text-xs text-blue-400 hover:text-blue-300 mb-1 flex items-center space-x-1">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span>К списку уроков</span>
-                            </button>
-                            <h2 class="text-2xl font-bold text-white">${escapeHtml(textObj.title)}</h2>
-                        </div>
-
-                        <!-- Color Brush Bar -->
-                        <div class="flex flex-wrap items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
-                            <span class="text-xs text-slate-400 px-1 font-medium">Кисть:</span>
-                            
-                            <button onclick="setBrushColor(null)" class="px-2 py-1 rounded-lg text-xs border ${state.activeBrushColor === null ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'} transition flex items-center space-x-1">
-                                <i class="fa-solid fa-ban"></i>
-                                <span class="hidden sm:inline">Выкл</span>
-                            </button>
-            `;
-
-            for (const [key, cfg] of Object.entries(colorsConfig)) {
-                const isActive = state.activeBrushColor === key;
-                const countInLesson = lessonStats.counts[key] || 0;
-
-                html += `
-                    <button onclick="setBrushColor('${key}')" class="px-2.5 py-1 rounded-lg text-xs font-medium ${cfg.bg} ${isActive ? 'ring-2 ring-blue-400 scale-105' : 'opacity-80 hover:opacity-100'} transition flex items-center space-x-1.5" title="${cfg.name}">
-                        <span>${cfg.name}</span>
-                        <span class="bg-black/30 px-1.5 py-0.5 rounded-full text-[10px] font-bold">${countInLesson}</span>
-                    </button>
-                `;
-            }
-
-            html += `
-                        </div>
-                    </div>
-
-                    <!-- Audio Player Bar -->
-                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow-lg sticky top-16 z-20 space-y-3">
-                        <div class="space-y-1">
-                            <div class="flex justify-between items-center text-xs text-slate-400 font-mono">
-                                <span id="currentTimeDisplay">${formatTime(state.elapsedSeconds)}</span>
-                                <span id="totalTimeDisplay">${formatTime(state.estimatedTotalSec)}</span>
-                            </div>
-                            <div class="relative w-full h-3 bg-slate-900 rounded-full overflow-hidden cursor-pointer border border-slate-700" onclick="seekAudioProgress(event)">
-                                <div id="audioProgressBar" style="width: ${(state.elapsedSeconds / state.estimatedTotalSec) * 100}%" class="h-full bg-blue-500 transition-all duration-150"></div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
-                            <div class="flex items-center space-x-2">
-                                <button onclick="audioRewind(-10)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="-10 сек">
-                                    <i class="fa-solid fa-rotate-left"></i><span class="text-[9px] ml-0.5">10</span>
-                                </button>
-                                <button onclick="audioRewind(-3)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="-3 сек">
-                                    <i class="fa-solid fa-rotate-left"></i><span class="text-[9px] ml-0.5">3</span>
-                                </button>
-                                <button onclick="togglePlay()" class="w-11 h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-lg transition text-lg">
-                                    <i class="fa-solid ${state.isPlaying ? 'fa-pause' : 'fa-play'}" id="playIcon"></i>
-                                </button>
-                                <button onclick="audioRewind(3)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="+3 сек">
-                                    <span class="text-[9px] mr-0.5">3</span><i class="fa-solid fa-rotate-right"></i>
-                                </button>
-                                <button onclick="audioRewind(10)" class="w-9 h-9 bg-slate-700 hover:bg-slate-600 rounded-xl flex items-center justify-center text-xs transition" title="+10 сек">
-                                    <span class="text-[9px] mr-0.5">10</span><i class="fa-solid fa-rotate-right"></i>
-                                </button>
-                            </div>
-
-                            <div class="flex items-center space-x-3 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
-                                <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-gauge-high mr-1"></i> Скорость: <b class="text-blue-400">${state.playbackRate.toFixed(2)}x</b></span>
-                                <input type="range" min="0.25" max="2.0" step="0.05" value="${state.playbackRate}" oninput="changeSpeed(this.value)" class="w-24 accent-blue-500 cursor-pointer">
-                            </div>
-
-                            <div class="flex items-center space-x-2">
-                                <button onclick="changePage(-1)" ${state.currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 bg-slate-700 rounded-lg text-xs"' : 'class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs transition"'}>
-                                    <i class="fa-solid fa-chevron-left"></i>
-                                </button>
-                                <span class="text-xs text-slate-300 font-medium">Стр. <b>${state.currentPage}</b> из <b>${pages.length}</b></span>
-                                <button onclick="changePage(1)" ${state.currentPage === pages.length ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 bg-slate-700 rounded-lg text-xs"' : 'class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs transition"'}>
-                                    <i class="fa-solid fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Reader Box -->
-                    <div class="bg-slate-800 border border-slate-700 p-6 md:p-8 rounded-2xl shadow-xl relative" id="readerTextBox">
-            `;
-
-            let globalWordCounter = 0;
-            let charIndexTracker = 0;
-            state.wordCharOffsets = [];
-
-            paragraphs.forEach(paragraph => {
-                html += `<div class="paragraph-block">`;
-                const tokens = tokenizeText(paragraph);
-
-                tokens.forEach(token => {
-                    const isWord = /[a-zA-ZÀ-ÿ]/.test(token);
-                    if (isWord) {
-                        const clean = token.toLowerCase();
-                        const dictItem = state.dictionary[clean];
-                        const colorKey = dictItem ? dictItem.color : 'wordWhite';
-                        const colorCfg = colorsConfig[colorKey];
-
-                        state.wordCharOffsets.push({
-                            wordIdx: globalWordCounter,
-                            charStart: charIndexTracker,
-                            charEnd: charIndexTracker + token.length
-                        });
-
-                        html += `<span class="word-badge ${colorCfg.bg}" draggable="false" data-word-idx="${globalWordCounter}" data-word="${escapeHtml(token)}" onclick="handleWordClick(event, ${globalWordCounter}, '${escapeHtml(token)}')">${escapeHtml(token)}</span>`;
-                        globalWordCounter++;
-                    } else if (token === '\n' || token === '\r\n') {
-                        html += `<br>`;
-                    } else {
-                        html += `<span class="text-slate-300">${escapeHtml(token)}</span>`;
-                    }
-                    charIndexTracker += token.length;
-                });
-
-                html += `</div>`;
-            });
-
-            html += `
-                    </div>
-
-                    <div class="flex justify-between items-center bg-slate-800 border border-slate-700 p-4 rounded-2xl">
-                        <span class="text-xs text-slate-400">Нужно продолжить историю? Добавьте еще текст в этот урок.</span>
-                        <button onclick="promptAppendText('${textObj.id}')" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-xl transition flex items-center space-x-1.5">
-                            <i class="fa-solid fa-plus text-blue-400"></i>
-                            <span>Добавить фрагмент к тексту</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            return html;
-        }
-
-        function renderDictionary() {
-            let html = `
-                <div class="space-y-6">
-                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-white">Персональный справочник</h2>
-                            <p class="text-sm text-slate-400 mt-1">Все сохраненные слова и фразы с переводами и статусами.</p>
-                        </div>
-                        <button onclick="clearDictionary()" class="text-xs bg-slate-700 hover:bg-rose-900/50 hover:text-rose-400 text-slate-300 px-4 py-2 rounded-xl transition">
-                            <i class="fa-solid fa-trash-can mr-1"></i> Очистить справочник
-                        </button>
-                    </div>
-
-                    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
-            `;
-
-            const words = Object.entries(state.dictionary);
-            if (words.length === 0) {
-                html += `<div class="text-center py-12 text-slate-400"><p>Справочник пуст.</p></div>`;
-            } else {
-                html += `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">`;
-                words.forEach(([word, data]) => {
-                    const cfg = colorsConfig[data.color] || colorsConfig['wordWhite'];
-                    html += `
-                        <div class="bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-col justify-between space-y-2">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="font-bold text-white text-base">${escapeHtml(word)}</span>
-                                    <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(data.translation || '—')}</p>
-                                </div>
-                                <select onchange="updateWordColorInDict('${escapeHtml(word)}', this.value)" class="text-xs bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-white">
-                    `;
-                    for (const [cKey, cCfg] of Object.entries(colorsConfig)) {
-                        html += `<option value="${cKey}" ${data.color === cKey ? 'selected' : ''}>${cCfg.name}</option>`;
-                    }
-                    html += `
-                                </select>
-                            </div>
-                            <div class="flex justify-between items-center pt-1 text-[11px] border-t border-slate-800">
-                                <span class="px-2 py-0.5 rounded ${cfg.bg}">${cfg.name}</span>
-                                <button onclick="deleteWordFromDict('${escapeHtml(word)}')" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
-            }
-
-            html += `</div></div>`;
-            return html;
-        }
-
-        function handleSaveText(e) {
-            e.preventDefault();
-            const title = document.getElementById('newTextTitle').value.trim();
-            const content = document.getElementById('newTextContent').value;
-            if (!title || !content) return;
-
-            const newText = { id: 'text-' + Date.now(), title, content, createdAt: new Date().toISOString() };
-            state.texts.unshift(newText);
-            saveState();
-            router.navigate('reader', newText.id);
-        }
-
-        function promptAppendText(id) {
-            const added = prompt('Вставьте дополнительный текст для этого урока:');
-            if (added && added.trim()) {
-                const textObj = state.texts.find(t => t.id === id);
-                if (textObj) {
-                    textObj.content += '\n\n' + added.trim();
-                    saveState();
-                    render();
-                }
-            }
-        }
-
-        function deleteText(id) {
-            if (confirm('Удалить этот урок?')) {
-                state.texts = state.texts.filter(t => t.id !== id);
-                saveState();
-                render();
-            }
-        }
-
-        function setBrushColor(colorKey) {
-            state.activeBrushColor = colorKey;
-            render();
-        }
-
-        function changePage(delta) {
-            stopSpeech();
-            state.currentPage += delta;
-            state.currentWordIdxInPage = 0;
-            state.elapsedSeconds = 0;
-            render();
-            window.scrollTo({ top: 100, behavior: 'smooth' });
-        }
-
-        function changeSpeed(val) {
-            state.playbackRate = parseFloat(val);
-            if (state.isPlaying) {
-                stopSpeech();
-                startSpeechFromIndex(state.currentWordIdxInPage);
-            } else {
-                render();
-            }
-        }
-
-        function seekAudioProgress(event) {
-            const rect = event.currentTarget.getBoundingClientRect();
-            const clickX = event.clientX - rect.left;
-            const percent = Math.max(0, Math.min(1, clickX / rect.width));
-            
-            state.elapsedSeconds = Math.round(percent * state.estimatedTotalSec);
-            state.currentWordIdxInPage = Math.floor(percent * (state.totalWordsInPage || 1));
-            
-            if (state.isPlaying) {
-                stopSpeech();
-                startSpeechFromIndex(state.currentWordIdxInPage);
-            } else {
-                highlightWordByPos(state.currentWordIdxInPage);
-                updateProgressBarUI();
-            }
-        }
-
-        function handleWordClick(event, wordIndex, word) {
-            event.stopPropagation();
-            const clean = word.toLowerCase();
-
-            if (state.activeBrushColor !== null) {
-                let item = state.dictionary[clean] || { color: state.activeBrushColor, translation: '' };
-                item.color = state.activeBrushColor;
-                state.dictionary[clean] = item;
-                saveState();
-                render();
-            } else {
-                speakSingleWord(word);
-                openTranslationModal(event.pageX, event.pageY, word);
-            }
-        }
-
-        function initReaderHandlers() {
-            const textBox = document.getElementById('readerTextBox');
-            if (textBox) {
-                document.addEventListener('mouseup', (e) => {
-                    const modal = document.getElementById('translationModal');
-                    if (modal && modal.contains(e.target)) return;
-
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-
-                    if (text.length > 1 && state.activeBrushColor === null) {
-                        openTranslationModal(e.pageX, e.pageY, text);
-                    }
-                });
-            }
-        }
-
-        async function openTranslationModal(x, y, text) {
-            const modal = document.getElementById('translationModal');
-            const srcText = document.getElementById('transSourceText');
-            const resText = document.getElementById('transResultText');
-            const idiomBox = document.getElementById('idiomExplanationBox');
-            const idiomText = document.getElementById('idiomExplanationText');
-            const pickers = document.getElementById('modalColorPickers');
-
-            const cleanPhrase = text.trim().toLowerCase();
-            state.modalTargetWord = cleanPhrase;
-            srcText.textContent = text;
-            resText.textContent = 'Перевод...';
-
-            modal.style.top = Math.min(y + 10, window.innerHeight - 250) + 'px';
-            modal.style.left = Math.min(x, window.innerWidth - 340) + 'px';
-            modal.classList.remove('hidden');
-
-            pickers.innerHTML = '';
-            for (const [cKey, cCfg] of Object.entries(colorsConfig)) {
-                pickers.innerHTML += `
-                    <button onclick="setModalWordColor('${cKey}')" class="text-[10px] p-1.5 rounded ${cCfg.bg} font-medium text-center truncate">${cCfg.name}</button>
-                `;
-            }
-
-            if (commonIdioms[cleanPhrase]) {
-                idiomBox.classList.remove('hidden');
-                idiomText.textContent = commonIdioms[cleanPhrase];
-            } else {
-                idiomBox.classList.add('hidden');
-            }
-
-            try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ru`);
-                const data = await res.json();
-                if (data && data.responseData) {
-                    const translation = data.responseData.translatedText;
-                    resText.textContent = translation;
-                    
-                    let item = state.dictionary[cleanPhrase] || { color: 'wordWhite', translation: '' };
-                    item.translation = translation;
-                    state.dictionary[cleanPhrase] = item;
-                    saveState();
-                }
-            } catch (err) {
-                resText.textContent = 'Ошибка перевода';
-            }
-        }
-
-        function setModalWordColor(colorKey) {
-            if (state.modalTargetWord) {
-                let item = state.dictionary[state.modalTargetWord] || { color: colorKey, translation: '' };
-                item.color = colorKey;
-                state.dictionary[state.modalTargetWord] = item;
-                saveState();
-                closeTranslationModal();
-                render();
-            }
-        }
-
-        function closeTranslationModal() {
-            const modal = document.getElementById('translationModal');
-            if (modal) modal.classList.add('hidden');
-        }
-
-        // --- Robust Speech Engine & Karaoke Tracker ---
-
-        function getBritishVoice() {
-            const voices = window.speechSynthesis.getVoices();
-            return voices.find(v => v.lang === 'en-GB') || voices.find(v => v.lang.startsWith('en'));
-        }
-
-        function togglePlay() {
-            if (state.isPlaying) stopSpeech();
-            else startSpeechFromIndex(state.currentWordIdxInPage);
-        }
-
-        function startSpeechFromIndex(startIndex) {
-            const textObj = state.texts.find(t => t.id === state.activeTextId);
-            if (!textObj) return;
-
-            const pages = getPagesForText(textObj.content);
-            const currentPageText = pages[state.currentPage - 1] || '';
-
-            if (!currentPageText.trim()) return;
-
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(currentPageText);
-            utterance.rate = state.playbackRate;
-            
-            const voice = getBritishVoice();
-            if (voice) utterance.voice = voice;
-
-            let wordCounter = startIndex;
-
-            // Direct karaoke boundary highlighting
-            utterance.onboundary = (e) => {
-                if (e.name === 'word') {
-                    // Find matching word by character index offset
-                    const match = state.wordCharOffsets.find(o => e.charIndex >= o.charStart && e.charIndex <= o.charEnd);
-                    if (match) {
-                        wordCounter = match.wordIdx;
-                    } else {
-                        wordCounter++;
-                    }
-                    state.currentWordIdxInPage = wordCounter;
-                    highlightWordByPos(wordCounter);
-                }
-            };
-
-            utterance.onstart = () => {
-                state.isPlaying = true;
-                updatePlayBtnUI();
-
-                // Live timer for smooth progress bar & clock updates
-                if (state.speechTimer) clearInterval(state.speechTimer);
-                state.speechTimer = setInterval(() => {
-                    if (state.isPlaying) {
-                        state.elapsedSeconds += 1;
-                        if (state.elapsedSeconds > state.estimatedTotalSec) {
-                            state.estimatedTotalSec = state.elapsedSeconds;
-                        }
-                        // Progressively advance word index if browser boundary event misses
-                        if (state.totalWordsInPage > 0) {
-                            state.currentWordIdxInPage = Math.min(state.totalWordsInPage - 1, Math.floor((state.elapsedSeconds / state.estimatedTotalSec) * state.totalWordsInPage));
-                            highlightWordByPos(state.currentWordIdxInPage);
-                        }
-                        updateProgressBarUI();
-                    }
-                }, 1000 / state.playbackRate);
-            };
-
-            utterance.onend = () => {
-                stopSpeech();
-            };
-
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function speakSingleWord(word) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(word);
-            utterance.rate = state.playbackRate;
-            const voice = getBritishVoice();
-            if (voice) utterance.voice = voice;
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function stopSpeech() {
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            if (state.speechTimer) clearInterval(state.speechTimer);
-            state.isPlaying = false;
-            clearWordHighlight();
-            updatePlayBtnUI();
-        }
-
-        function audioRewind(seconds) {
-            stopSpeech();
-            state.elapsedSeconds = Math.max(0, Math.min(state.estimatedTotalSec, state.elapsedSeconds + seconds));
-            state.currentWordIdxInPage = Math.floor((state.elapsedSeconds / (state.estimatedTotalSec || 1)) * state.totalWordsInPage);
-            startSpeechFromIndex(state.currentWordIdxInPage);
-        }
-
-        function updatePlayBtnUI() {
-            const btn = document.getElementById('playIcon');
-            if (btn) btn.className = state.isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
-        }
-
-        function updateProgressBarUI() {
-            const bar = document.getElementById('audioProgressBar');
-            const timeDisplay = document.getElementById('currentTimeDisplay');
-            
-            if (bar) {
-                const pct = Math.min(100, (state.elapsedSeconds / (state.estimatedTotalSec || 1)) * 100);
-                bar.style.width = pct + '%';
-            }
-            if (timeDisplay) {
-                timeDisplay.textContent = formatTime(state.elapsedSeconds);
-            }
-        }
-
-        function highlightWordByPos(idx) {
-            clearWordHighlight();
-            const el = document.querySelector(`[data-word-idx="${idx}"]`);
-            if (el) {
-                el.classList.add('word-active');
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        function clearWordHighlight() {
-            document.querySelectorAll('.word-badge').forEach(el => el.classList.remove('word-active'));
-        }
-
-        function updateWordColorInDict(word, colorKey) {
-            if (state.dictionary[word]) {
-                state.dictionary[word].color = colorKey;
-                saveState();
-                render();
-            }
-        }
-
-        function deleteWordFromDict(word) {
-            delete state.dictionary[word];
-            saveState();
-            render();
-        }
-
-        function clearDictionary() {
-            if (confirm('Очистить весь справочник?')) {
-                state.dictionary = {};
-                saveState();
-                render();
-            }
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => getBritishVoice();
-
-        render();
-    </script>
-<a href="index.html">Перейти на главную страницу</a>
+      }
+    }
+  }catch(e){
+    console.warn("Translation API error");
+  }
+  
+  if (saveToDict) {
+    const currentRating = ratingToApply !== null ? ratingToApply : (state.words[key]?.rating || 3);
+    setWordRating(word, currentRating, translation);
+  }
+  
+  updateTranslationBox(word, translation);
+  renderDictionary();
+  renderOverallStats();
+}
+
+function showWordDetails(word, sentence, saveToDict = true){
+  const rec = state.words[wordKey(word)];
+  if(rec && rec.translation){
+    updateTranslationBox(word, rec.translation);
+  } else {
+    translateAndSaveWord(word, sentence, null, saveToDict);
+  }
+}
+
+const finishBulkBtn = document.getElementById("finishBulk");
+if(finishBulkBtn) finishBulkBtn.addEventListener("click",()=>{
+  bulkMode=false;bulkRating=null;selectedBulkWords.clear();
+  document.querySelectorAll("#colorPanel .color-choice, #wordStats .color-choice").forEach(x=>x.classList.remove("selected"));
+  updateBulkStatus();
+});
+
+const backLessonsBtn = document.getElementById("backToLessons");
+if(backLessonsBtn) backLessonsBtn.addEventListener("click",()=>{stopAudio(true);document.body.classList.remove("lesson-open");showView("lessonsView")});
+
+const cleanModeToggle = document.getElementById("cleanModeToggle");
+const fontSizeRange = document.getElementById("fontSizeRange");
+const fontSizeLabel = document.getElementById("fontSizeLabel");
+
+function updateDisplayToggles() {
+  if(cleanModeToggle) document.body.classList.toggle("clean-mode", !cleanModeToggle.checked);
+}
+
+if(cleanModeToggle) cleanModeToggle.addEventListener("change", updateDisplayToggles);
+updateDisplayToggles();
+
+if(fontSizeRange && fontSizeLabel) {
+  fontSizeRange.addEventListener("input", (e)=>{
+    const val = e.target.value;
+    document.documentElement.style.setProperty("--reading-font-size", val + "rem");
+    fontSizeLabel.textContent = Number(val).toFixed(2) + "rem";
+  });
+}
+
+function renderDictionary(){
+  const searchInput = document.getElementById("dictionarySearch");
+  const filterSelect = document.getElementById("dictionaryFilter");
+  const tbody = document.getElementById("dictionaryRows");
+  if(!tbody) return;
+  
+  const query = searchInput ? searchInput.value.trim().toLocaleLowerCase("en-GB") : "";
+  const filter = filterSelect ? filterSelect.value : "all";
+  tbody.replaceChildren();
+  
+  const validWords = Object.entries(state.words).filter(([key,rec])=>{
+    const r = rec.rating;
+    return r !== "sym" && Number(r) > 0;
+  });
+
+  const counts = {1:0, 2:0, 3:0, 4:0, 5:0};
+  validWords.forEach(([k,rec]) => {
+    if(counts[rec.rating] !== undefined) counts[rec.rating]++;
+  });
+
+  if(filterSelect) {
+    const currentFilterVal = filterSelect.value || "all";
+    filterSelect.replaceChildren();
+    
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = `All ratings (${validWords.length})`;
+    filterSelect.appendChild(allOpt);
+
+    RATINGS.slice(0,5).forEach(r=>{
+      const opt = document.createElement("option");
+      opt.value = String(r.value);
+      opt.textContent = `${r.label} (${counts[r.value]||0})`;
+      filterSelect.appendChild(opt);
+    });
+    filterSelect.value = currentFilterVal;
+  }
+
+  const entries=validWords.filter(([key,rec])=>{
+    const matchesQuery = !query || key.includes(query) || (rec.translation||"").toLocaleLowerCase("ru").includes(query);
+    const matchesFilter = filter==="all" || String(rec.rating)===filter;
+    return matchesQuery && matchesFilter;
+  }).sort((a,b)=>a[0].localeCompare(b[0]));
+  
+  entries.forEach(([key,rec])=>{
+    const tr=document.createElement("tr");
+    
+    const tdWord=document.createElement("td");
+    tdWord.innerHTML = `<strong>${rec.word||key}</strong> <button style="border:none;background:none;cursor:pointer;font-size:0.8rem;" onclick="speakText('${rec.word||key}')">🔊</button>`;
+    
+    const tdMain=document.createElement("td");
+    const inpMain=document.createElement("input");
+    inpMain.value=rec.translation||"";
+    inpMain.addEventListener("change",()=>{
+      rec.translation=inpMain.value.trim();
+      saveState();
+    });
+    tdMain.appendChild(inpMain);
+    
+    const tdAlt=document.createElement("td");
+    const inpAlt=document.createElement("input");
+    inpAlt.value=rec.altTranslations||"";
+    inpAlt.placeholder="Варианты из контекста";
+    inpAlt.addEventListener("change",()=>{
+      rec.altTranslations=inpAlt.value.trim();
+      saveState();
+    });
+    tdAlt.appendChild(inpAlt);
+    
+    const tdRating=document.createElement("td");
+    const sel=document.createElement("select");
+    RATINGS.slice(0,5).forEach(r=>sel.add(new Option(r.label,String(r.value))));
+    sel.value=String(rec.rating||3);
+    sel.addEventListener("change",()=>{
+      const val = Number(sel.value);
+      setWordRating(rec.word||key, val);
+      renderDictionary();renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}
+    });
+    tdRating.appendChild(sel);
+    
+    const tdAction=document.createElement("td");
+    const delBtn=document.createElement("button");
+    delBtn.className="btn";
+    delBtn.textContent="Удалить";
+    delBtn.style.padding="3px 6px";
+    delBtn.style.fontSize="0.75rem";
+    delBtn.addEventListener("click",()=>{
+      setWordRating(rec.word||key, 0);
+      renderDictionary();renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}
+    });
+    tdAction.appendChild(delBtn);
+    
+    tr.append(tdWord, tdMain, tdAlt, tdRating, tdAction);
+    tbody.appendChild(tr);
+  });
+  
+  const summary=document.getElementById("dictionarySummary");
+  if(summary) { summary.replaceChildren(); summary.append(makeStat("Saved words",validWords.length)); }
+}
+
+const dictSearch = document.getElementById("dictionarySearch");
+if(dictSearch) dictSearch.addEventListener("input",renderDictionary);
+const dictFilter = document.getElementById("dictionaryFilter");
+if(dictFilter) dictFilter.addEventListener("change",renderDictionary);
+
+function renderOverallStats(){
+  const validWords = Object.values(state.words).filter(w=>w.rating!=="sym"&&Number(w.rating)>0);
+  const counts={1:0,2:0,3:0,4:0,5:0};validWords.forEach(w=>counts[w.rating||0]++);
+  const root=document.getElementById("overallStats");
+  if(root) {
+    root.replaceChildren();
+    root.append(makeStat("Lessons",state.lessons.length),makeStat("Saved words",validWords.length),makeStat("Translations",validWords.filter(w=>w.translation).length));
+  }
+  const colors=document.getElementById("ratingTotals");
+  if(colors) {
+    colors.replaceChildren();
+    RATINGS.slice(0,5).forEach(r=>{const b=document.createElement("div");b.className=`color-choice ${r.cls}`;b.innerHTML=`<strong>L${r.value}: ${counts[r.value]}</strong><small>Words</small>`;colors.appendChild(b)});
+  }
+}
+
+function stopAudio(reset){
+  utteranceRun++;
+  if("speechSynthesis" in window)window.speechSynthesis.cancel();
+  isPlaying=false;isPaused=false;
+  if(reset){currentSentence=0;}
+  highlightCurrentSentence();
+  const status=document.getElementById("playerStatus");if(status)status.textContent="Stopped";
+}
+function speakSentence(){
+  const l=getLesson();if(!l||!("speechSynthesis" in window))return;
+  const sentences=splitSentences(l.text);if(!sentences.length)return;
+  currentSentence=Math.max(0,Math.min(currentSentence,sentences.length-1));
+  window.speechSynthesis.cancel();const run=++utteranceRun;
+  const utterance=new SpeechSynthesisUtterance(sentences[currentSentence]);utterance.rate=Number(document.getElementById("speed").value);utterance.pitch=1;utterance.lang="en-GB";
+  const voice=voices[Number(document.getElementById("voiceSelect").value)];if(voice){utterance.voice=voice;utterance.lang=voice.lang}
+  isPlaying=true;isPaused=false;
+  highlightCurrentSentence();
+  
+  const span=document.querySelector(`#readingText [data-sentence="${currentSentence}"]`);
+  if(span)span.scrollIntoView({behavior:"smooth",block:"nearest"});
+
+  utterance.onend=()=>{
+    if(run!==utteranceRun)return;
+    isPlaying=false;
+    const modeEl = document.getElementById("sentenceMode");
+    if(modeEl && modeEl.value==="continuous"&&currentSentence<sentences.length-1){
+      currentSentence++;
+      speakSentence();
+    } else {
+      highlightCurrentSentence();
+    }
+  };
+  utterance.onerror=e=>{if(run!==utteranceRun)return;isPlaying=false;highlightCurrentSentence();};
+  window.speechSynthesis.speak(utterance);
+}
+
+const playAud = document.getElementById("playAudio");
+if(playAud) playAud.addEventListener("click",()=>{if(isPaused&&window.speechSynthesis.paused){window.speechSynthesis.resume();isPaused=false;isPlaying=true;highlightCurrentSentence();}else speakSentence()});
+const pauseAud = document.getElementById("pauseAudio");
+if(pauseAud) pauseAud.addEventListener("click",()=>{if(window.speechSynthesis&&window.speechSynthesis.speaking){window.speechSynthesis.pause();isPaused=true;isPlaying=false}});
+const stopAud = document.getElementById("stopAudio");
+if(stopAud) stopAud.addEventListener("click",()=>stopAudio(true));
+const prevSent = document.getElementById("previousSentence");
+if(prevSent) prevSent.addEventListener("click",()=>{currentSentence=Math.max(0,currentSentence-1);speakSentence()});
+const nextSent = document.getElementById("nextSentence");
+if(nextSent) nextSent.addEventListener("click",()=>{const s=splitSentences(getLesson()?.text||"");currentSentence=Math.min(s.length-1,currentSentence+1);speakSentence()});
+const repSent = document.getElementById("repeatSentence");
+if(repSent) repSent.addEventListener("click",speakSentence);
+const speedRange = document.getElementById("speed");
+if(speedRange) speedRange.addEventListener("input",e=>{
+  const lbl = document.getElementById("speedLabel");
+  if(lbl) lbl.textContent = Number(e.target.value).toFixed(1)+"×";
+});
+
+function loadVoices(){
+  if(!("speechSynthesis" in window))return;
+  voices=window.speechSynthesis.getVoices();const select=document.getElementById("voiceSelect");if(!select)return;
+  const old=select.value;select.replaceChildren();
+  const british=voices.filter(v=>/^en-GB$/i.test(v.lang));const options=british.length?british:voices;
+  options.forEach(v=>select.add(new Option(`${v.name} (${v.lang})`,String(voices.indexOf(v)))));
+  if(!options.length){select.add(new Option("No voices",""));return}
+  const preferred=options.find(v=>/natural|enhanced|premium/i.test(v.name))||british[0]||options[0];
+  select.value=options.some(v=>String(voices.indexOf(v))===old)?old:String(voices.indexOf(preferred));
+}
+if("speechSynthesis" in window){loadVoices();window.speechSynthesis.addEventListener("voiceschanged",loadVoices)}
+
+const exportBtn = document.getElementById("exportData");
+if(exportBtn) exportBtn.addEventListener("click",()=>downloadJSON({version:13,exportedAt:new Date().toISOString(),lessons:state.lessons,words:state.words},"english-vocabulary-backup.json"));
+
+const importInput = document.getElementById("importData");
+if(importInput) importInput.addEventListener("change",async e=>{
+  const file=e.target.files[0];if(!file)return;
+  try{
+    const imported=JSON.parse(await file.text());
+    if(!Array.isArray(imported.lessons)||!imported.words)throw new Error("Invalid backup.");
+    if(!confirm("Import and merge backup?"))return;
+    const byId=new Map(state.lessons.map(l=>[l.id,l]));imported.lessons.forEach(l=>{if(l.id&&l.title&&l.text)byId.set(l.id,l)});state.lessons=[...byId.values()];
+    Object.entries(imported.words).forEach(([k,v])=>{if(v)state.words[k]=v;});
+    saveState();renderLessons();renderDictionary();renderOverallStats();
+    const st = document.getElementById("backupStatus");
+    if(st) st.textContent="Imported successfully.";
+  }catch(err){
+    const st = document.getElementById("backupStatus");
+    if(st) st.textContent="Failed: "+err.message;
+  }
+  finally{e.target.value=""}
+});
+
+function downloadJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+
+// Инициализация загрузки
+initCloudSync();
+</script>
 </body>
 </html>
