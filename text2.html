@@ -47,7 +47,7 @@ textarea{min-height:155px;resize:vertical}
 .player-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
 .player-controls button{border:1px solid #cbd5e1;border-radius:8px;background:white;padding:10px 12px;cursor:pointer}
 .player-controls .primary{background:var(--blue);color:white}
-.reading-text{font-size:1.18rem;line-height:1.425;overflow-wrap:anywhere}
+.reading-text{font-size:1.18rem;line-height:1.32;overflow-wrap:anywhere}
 .reading-paragraph{display:block;text-indent:1.5em;margin:0}
 .reading-paragraph:first-child{margin-top:0}
 .word{border-radius:4px;padding:1px 0;cursor:pointer;white-space:pre-wrap}
@@ -69,7 +69,7 @@ body.hide-word-outlines .reading-paragraph [data-sentence].karaoke-current .word
 .phrase-tag{display:inline-block;font-size:.72rem;padding:2px 6px;border-radius:5px;background:#edf2f8;margin-left:5px}
 .word.selected-mass{outline:2px dashed #172b4d;outline-offset:1px}
 body.hide-word-outlines .word.selected-mass{outline:none!important}
-.word.c5{background:#39e639}.word.c4{background:#176b32;color:white}.word.c3{background:#2878e8;color:white}.word.c2{background:#ffe34d;color:#332900}.word.c1{background:#e53935;color:white}.word.c0{background:white;color:#243247}
+.word.c5{background:var(--rating5,#39e639)}.word.c4{background:var(--rating4,#176b32);color:var(--rating4text,#fff)}.word.c3{background:var(--rating3,#2878e8);color:var(--rating3text,#fff)}.word.c2{background:var(--rating2,#ffe34d);color:var(--rating2text,#332900)}.word.c1{background:var(--rating1,#e53935);color:var(--rating1text,#fff)}.word.c0{background:var(--rating0,#fff);color:#243247}
 .translation-box{background:#f0f6ff;border-left:4px solid var(--blue);border-radius:7px;padding:13px;min-height:90px}
 table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #e5eaf0;padding:8px 6px;vertical-align:top}th{font-size:.9rem;white-space:nowrap}th button.sort-heading{all:unset;cursor:pointer;font-weight:700;color:inherit;padding:3px 2px}th button.sort-heading:hover{color:var(--blue)}td input{min-width:140px;padding:7px;font-size:.9rem}td .btn{padding:6px 8px;font-size:.82rem;white-space:nowrap}.context-source{font-size:.75rem;color:var(--muted);margin-top:4px;max-width:280px;white-space:normal}
 .pill{display:inline-block;border-radius:20px;background:#edf2f8;padding:3px 8px;font-size:.8rem}
@@ -134,13 +134,39 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
 
 .meaning-details-row>td{background:#f7f9fc;padding:8px!important}.meaning-list{display:flex;flex-direction:column;gap:7px}.meaning-card{border:1px solid #dfe5ed;border-radius:8px;padding:9px;background:#fff}.meaning-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:7px}.meaning-fields label{display:flex;flex-direction:column;gap:5px;font-size:.9rem}.meaning-toggle{min-width:34px;padding:5px 9px}.meaning-details-row[hidden]{display:none}
 
+
+.lesson-heading-card{padding:8px 12px;margin-bottom:7px}.lesson-heading-card> .row>div:last-child{display:none!important}.lesson-heading-card .row{gap:6px}.lesson-heading-card h2{font-size:1rem;margin:0}
+/* Settings popover and compact dictionary navigation */
+#settingsButton{padding:6px 11px;font-size:.78rem}#settingsPopover{position:fixed;z-index:200;top:82px;right:max(12px,calc((100% - 1100px)/2));width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 100px);overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 12px 35px #14243a30;padding:14px;display:none}#settingsPopover.open{display:block}#settingsPopover .setting-row{display:grid;grid-template-columns:1fr 1.2fr;gap:10px;align-items:center;margin:9px 0}#settingsPopover label{font-size:.84rem;margin:0}#settingsPopover input[type=range]{padding:0}#settingsPopover input[type=checkbox]{width:auto}#settingsPopover select{padding:7px;font-size:.85rem}#settingsPopover .setting-checks{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}#settingsPopover .setting-checks label{display:flex;gap:5px;align-items:center}#settingsPopover .setting-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}#settingsPopover .setting-actions button{padding:7px 9px;font-size:.82rem}
+#colorEditor{position:fixed;inset:0;background:#14243a70;z-index:250;display:none;align-items:center;justify-content:center;padding:16px}#colorEditor.open{display:flex}#colorEditor .editor-card{width:min(520px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;padding:18px;box-shadow:0 15px 40px #0003}#colorEditor .color-edit-row{display:grid;grid-template-columns:50px 1fr 100px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #e5eaf0}#colorEditor input[type=color]{width:48px;height:38px;padding:2px}#colorEditor input[type=text]{padding:7px;min-width:0}
+#dictionaryView .dictionary-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:7px 0}#dictionaryView .dictionary-tools input[type=range]{width:110px;padding:0}#dictionaryAlphabet{position:sticky;top:0;z-index:20;background:#f7f9fc;border:1px solid #dbe3ed;border-radius:8px;padding:5px;display:flex;gap:3px;flex-wrap:wrap;align-items:center;margin:8px 0}#dictionaryAlphabet button{padding:3px 6px;min-width:23px;font-size:.75rem;border-radius:5px}#dictionaryAlphabet button.active{background:var(--blue);color:white}#dictionaryTable th,#dictionaryTable td{padding:5px 4px}#dictionaryTable td input,#phraseDictionaryTable td input{min-width:75px;padding:5px;font-size:.82rem}#dictionaryTable .word-name{white-space:nowrap}#dictionaryTable .sync-translation{padding:4px 6px;font-size:.8rem;min-width:0}#dictionaryTable .extra-translation{min-width:100px}#dictionaryView .dictionary-top-controls{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}#dictionaryView .dictionary-top-controls button{padding:6px 9px;font-size:.8rem}#dictionaryView .dictionary-filter-row{display:flex;gap:7px;flex-wrap:wrap;align-items:end}#dictionaryView .dictionary-filter-row>div{flex:1;min-width:145px}#dictionaryView .dictionary-filter-row label{margin:4px 0;font-size:.8rem}#dictionaryView h2{margin-bottom:5px}#dictionaryView .dictionary-description{margin:0 0 7px;font-size:.78rem}
+@media(max-width:700px){#settingsPopover{top:65px;right:8px}#dictionaryAlphabet{position:static}#dictionaryView .card{padding:9px}#dictionaryView .statline{gap:4px}#dictionaryView .stat{min-width:75px}}
+
+/* Latest compact toolbar and rating-colour refinements */
+header p{display:none!important}
+nav .lesson-meta-stack{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;flex:0 0 auto;max-width:175px;line-height:1.15}
+nav .toolbar-title{display:block;max-width:175px;line-height:1.2}
+nav .toolbar-topic{display:block;max-width:175px;margin:2px 0 0!important;font-size:.66rem;line-height:1.15}
+nav #finishBulk{order:0;margin:0 2px 0 0;padding:4px 6px;font-size:.65rem}
+#playerCard .player-controls button{min-width:28px;width:30px;padding:5px 3px;font-size:.85rem}
+#dictionaryView .dictionary-tools{margin:5px 0}
+#dictionaryView .dictionary-filter-row{gap:5px}
+#dictionaryView .dictionary-top-controls{margin:5px 0}
+.dictionary-rating-colour{background:var(--rating-bg,#fff);color:var(--rating-fg,#243247);border-color:#bfcbd8}
+.dictionary-rating-colour[data-rating="5"]{background:var(--rating5,#39e639);color:var(--rating5text,#102510)}
+.dictionary-rating-colour[data-rating="4"]{background:var(--rating4,#176b32);color:var(--rating4text,#fff)}
+.dictionary-rating-colour[data-rating="3"]{background:var(--rating3,#2878e8);color:var(--rating3text,#fff)}
+.dictionary-rating-colour[data-rating="2"]{background:var(--rating2,#ffe34d);color:var(--rating2text,#332900)}
+.dictionary-rating-colour[data-rating="1"]{background:var(--rating1,#e53935);color:var(--rating1text,#fff)}
+body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color:#243247!important}
+
 </style>
 </head>
 <body>
 <header>
   <div class="header-layout"><div class="header-brand">
     <h1>British English Vocabulary Lab</h1>
-    <p>Listen · Read · Rate words · Build your personal dictionary</p>
+    
   </div></div>
 </header>
 <nav>
@@ -148,7 +174,19 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
   <button data-view="lessonView" id="navCurrent" disabled>Open lesson</button>
   <button data-view="dictionaryView">Dictionary</button>
   <button data-view="statsView">Statistics & Backup</button>
+  <button type="button" id="settingsButton" aria-expanded="false">⚙ Settings</button>
 </nav>
+<div id="settingsPopover" role="dialog" aria-label="Settings">
+  <div class="row" style="align-items:center"><strong>Settings</strong><button type="button" class="btn" id="closeSettings" style="flex:0 0 auto;padding:4px 9px">✕</button></div>
+  <div class="setting-row"><label for="voiceSelect">British voice</label><select id="voiceSelect"></select></div>
+  <div class="setting-row"><label for="speed">Speed <span id="speedLabel">0.8×</span></label><input id="speed" type="range" min="0.5" max="1.5" step="0.1" value="0.8"></div>
+  <div class="setting-row"><label for="sentenceMode">Playback</label><select id="sentenceMode"><option value="continuous">Continuous</option><option value="single">One sentence</option></select></div>
+  <div class="setting-checks"><label><input type="checkbox" id="hideColoursToggle"> Colour</label><label><input type="checkbox" id="hideButtonsToggle"> Buttons</label><label><input type="checkbox" id="ratePhrasesToggle" checked> Phrasal verbs</label></div>
+  <div class="setting-row"><label for="dockFontSize">Lesson text <span id="dockFontSizeLabel">100%</span></label><input id="dockFontSize" type="range" min="50" max="150" step="5" value="100"></div>
+  <div class="setting-actions"><button type="button" class="btn" id="openColorEditor">🎨 Colour editor</button></div>
+  <p id="voiceInfo" class="small" style="margin:8px 0 0"></p><p class="small" id="playerStatus" style="margin:4px 0 0">Ready</p>
+</div>
+<div id="colorEditor" aria-hidden="true"><div class="editor-card"><div class="row" style="align-items:center"><h2 style="margin:0;flex:1">Colour editor</h2><button type="button" class="btn" id="closeColorEditor">✕</button></div><p class="small">Choose any six colours for your word-rating buttons. Changes apply to lesson words and the rating palette.</p><div id="colorEditorRows"></div><div class="row" style="margin-top:12px"><button class="btn primary" id="saveColorEditor">Save colours</button><button class="btn" id="resetColorEditor">Reset defaults</button></div></div></div>
 <main>
 <section id="lessonsView" class="view active">
   <div class="card">
@@ -170,23 +208,16 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
 </section>
 
 <section id="lessonView" class="view">
-  <div class="card">
-    <div class="row"><div><h2 id="currentTitle">Lesson</h2><span id="currentTopic" class="small"></span><span id="lessonStats" class="statline"></span></div><div style="flex:0 0 auto;min-width:150px"><label for="lessonFontSize" style="margin:0;font-size:.78rem">Text size <span id="lessonFontSizeLabel">100%</span></label><input id="lessonFontSize" type="range" min="85" max="150" step="5" value="100"></div></div>
+  <div class="card lesson-heading-card">
+    <div class="row"><div><h2 id="currentTitle">Lesson</h2><span id="currentTopic" class="small"></span><span id="lessonStats" class="statline"></span></div><div style="flex:0 0 auto;min-width:150px"><label for="lessonFontSize" style="margin:0;font-size:.78rem">Text size <span id="lessonFontSizeLabel">100%</span></label><input id="lessonFontSize" type="range" min="50" max="150" step="5" value="100"></div></div>
   </div>
   <div class="card" id="playerCard">
     <h2>Audio player</h2>
-    <div class="voice-wrap"><label for="voiceSelect">British voice</label><select id="voiceSelect"></select></div>
-    <p id="voiceInfo" class="small">Voice availability depends on your browser and device.</p>
-    <div class="row">
-      <div class="speed-wrap"><label for="speed">Speed <span id="speedLabel">0.8×</span></label><input id="speed" type="range" min="0.5" max="1.2" step="0.1" value="0.8"></div>
-      <div class="settings-wrap"><label for="sentenceMode">Playback</label><select id="sentenceMode"><option value="continuous">Continuous</option><option value="single">One sentence</option></select></div>
-    </div>
     <div class="player-controls">
-      <button id="previousSentence">⏮ Previous</button><button id="repeatSentence">↺ Repeat</button>
-      <button id="playAudio" class="primary">▶ Start</button><button id="pauseAudio">⏸ Pause</button>
-      <button id="stopAudio">⏹ Stop / Reset</button><button id="nextSentence">Next ⏭</button>
+      <button id="previousSentence" title="Previous sentence" aria-label="Previous sentence">⏮</button><button id="repeatSentence" title="Repeat sentence" aria-label="Repeat sentence">↺</button>
+      <button id="playAudio" class="primary" title="Start playback" aria-label="Start playback">▶</button><button id="pauseAudio" title="Pause playback" aria-label="Pause playback">⏸</button>
+      <button id="stopAudio" title="Stop and reset" aria-label="Stop and reset">⏹</button><button id="nextSentence" title="Next sentence" aria-label="Next sentence">⏭</button>
     </div>
-    <p id="playerStatus" class="small" style="text-align:center">Ready</p>
   </div>
   <div class="card">
     <h2>Word rating panel</h2>
@@ -214,13 +245,14 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
   <div class="card">
     <h2>My dictionary</h2>
     <p class="small">Each exact word form is stored separately. For example, “work”, “works”, “worked” and “working” can all have different ratings.</p>
-    <label for="dictionarySearch">Search English words, phrasal verbs or Russian translations</label><input id="dictionarySearch" placeholder="For example: pick up, выбирать, забрать...">
-    <div class="row" style="margin:8px 0;align-items:end"><div style="flex:1;min-width:180px"><label for="dictionaryTypeFilter">Show</label><select id="dictionaryTypeFilter"><option value="all">All entries</option><option value="words">Ordinary words only</option><option value="phrases">Phrasal verbs only</option><option value="extra">Entries with extra meanings</option><option value="unrated">Entries with unrated meanings</option><option value="low">Entries with rating 1 or 2</option></select></div><div style="flex:1;min-width:180px"><label for="dictionaryFilter">Main rating</label><select id="dictionaryFilter"><option value="all">All ratings</option><option value="unsaved">Missing main translation</option><option value="1">Rating 1</option><option value="2">Rating 2</option><option value="3">Rating 3</option><option value="4">Rating 4</option><option value="5">Rating 5</option></select></div></div>
-    <div class="row" style="margin:8px 0"><button class="btn" id="expandAllDictionary">Expand all meanings</button><button class="btn" id="collapseAllDictionary">Collapse all meanings</button></div>
+    <p class="small dictionary-description">One entry per row. Ratings stay independent; phrasal verbs are listed separately.</p>
+    <div class="dictionary-tools"><input id="dictionarySearch" placeholder="Search English or Russian…" aria-label="Search dictionary" style="flex:1;min-width:150px"></div>
+    <div id="dictionaryAlphabet" aria-label="Jump to first word by letter"></div>
+    <div class="dictionary-filter-row"><div><label for="dictionaryTypeFilter">Show</label><select id="dictionaryTypeFilter"><option value="all">All entries</option><option value="words">Ordinary words only</option><option value="phrases">Phrasal verbs only</option><option value="extra">Entries with extra translation</option></select></div><div><label for="dictionaryFilter">Main rating</label><select id="dictionaryFilter"><option value="all">All ratings</option><option value="unsaved">Missing main translation</option><option value="1">Rating 1</option><option value="2">Rating 2</option><option value="3">Rating 3</option><option value="4">Rating 4</option><option value="5">Rating 5</option></select></div></div>
+    <div class="dictionary-top-controls"><button class="btn" id="selectAllDictionary">Select all</button><button class="btn" id="clearDictionarySelection">Clear selection</button><button class="btn primary" id="saveSelectedDictionary">Save selected</button><button class="btn danger" id="deleteSelectedDictionary">Delete selected</button></div>
     <div id="dictionarySummary" class="statline"></div>
-    <div class="row" style="margin:8px 0"><button class="btn" id="selectAllDictionary">Select all</button><button class="btn" id="clearDictionarySelection">Clear selection</button><button class="btn primary" id="saveSelectedDictionary">Save selected</button><button class="btn danger" id="deleteSelectedDictionary">Delete selected</button></div>
-    <div style="overflow-x:auto"><table id="dictionaryTable"><thead><tr><th>Select</th><th><button class="sort-heading" data-sort="word">Word / phrase ↕</button></th><th><button class="sort-heading" data-sort="translation">Main translation ↕</button></th><th><button class="sort-heading" data-sort="rating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="dictionaryRows"></tbody></table></div>
-    <div class="phrase-table"><h3>Phrasal verbs</h3><p class="small">A separate dictionary: knowing “pick” and “up” does not change your rating for “pick up”. Every meaning has its own translation, example and rating.</p><div style="overflow-x:auto"><table id="phraseDictionaryTable"><thead><tr><th><button class="sort-heading" data-sort="phrase">Phrasal verb ↕</button></th><th><button class="sort-heading" data-sort="phraseTranslation">Main translation ↕</button></th><th><button class="sort-heading" data-sort="phraseRating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="phraseRows"></tbody></table></div></div>
+    <div style="overflow-x:auto"><table id="dictionaryTable"><thead><tr><th>Select</th><th><button class="sort-heading" data-sort="word">Word / phrase ↕</button></th><th><button class="sort-heading" data-sort="translation">Main translation ↕</button></th><th>Extra translation</th><th><button class="sort-heading" data-sort="rating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="dictionaryRows"></tbody></table></div>
+    <div class="phrase-table"><h3>Phrasal verbs</h3><p class="small">A separate dictionary: knowing “pick” and “up” does not change your rating for “pick up”. Every meaning has its own translation, example and rating.</p><div style="overflow-x:auto"><table id="phraseDictionaryTable"><thead><tr><th><button class="sort-heading" data-sort="phrase">Phrasal verb ↕</button></th><th><button class="sort-heading" data-sort="phraseTranslation">Main translation ↕</button></th><th>Extra translation</th><th><button class="sort-heading" data-sort="phraseRating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="phraseRows"></tbody></table></div></div>
   </div>
 </section>
 
@@ -249,29 +281,25 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
   const detailCard=document.getElementById("wordDetails").closest(".card");
   ratingCard.classList.add("lesson-rating-card");detailCard.classList.add("lesson-details-card");
   const dock=document.createElement("div");dock.id="lessonDock";dock.setAttribute("aria-label","Translation panel");
-  dock.innerHTML='<div class="dock-top"><span class="dock-title">Translation</span><div id="dockWordDetails"></div><label class="dock-font-control" for="dockFontSize">Text <strong id="dockFontSizeLabel">100%</strong><input id="dockFontSize" type="range" min="85" max="150" step="5" value="100" aria-label="Lesson text size"></label></div>';
+  dock.innerHTML='<div class="dock-top"><span class="dock-title">Translation</span><div id="dockWordDetails"></div></div>';
   document.body.appendChild(dock);
   const nav=document.querySelector("nav");
   nav.appendChild(document.getElementById("colorPanel"));
   nav.appendChild(document.getElementById("wordStats"));
-  const title=document.createElement("span");title.className="toolbar-title";title.id="toolbarTitle";nav.appendChild(title);
-  const topic=document.createElement("span");topic.className="toolbar-topic";topic.id="toolbarTopic";nav.appendChild(topic);
+  const meta=document.createElement("div");meta.className="lesson-meta-stack";
+  const title=document.createElement("span");title.className="toolbar-title";title.id="toolbarTitle";meta.appendChild(title);
+  const topic=document.createElement("span");topic.className="toolbar-topic";topic.id="toolbarTopic";meta.appendChild(topic);nav.appendChild(meta);
   const sentenceCount=document.createElement("span");sentenceCount.className="toolbar-stats";sentenceCount.id="toolbarSentenceCount";nav.appendChild(sentenceCount);
-  const colourToggle=document.createElement("label");colourToggle.className="toolbar-toggle";colourToggle.innerHTML='<input type="checkbox" id="hideColoursToggle"> Цвет';nav.appendChild(colourToggle);
-  const buttonsToggle=document.createElement("label");buttonsToggle.className="toolbar-toggle";buttonsToggle.innerHTML='<input type="checkbox" id="hideButtonsToggle"> Кнопки';nav.appendChild(buttonsToggle);
-  const phrasesToggle=document.createElement("label");phrasesToggle.className="toolbar-toggle";phrasesToggle.innerHTML='<input type="checkbox" id="ratePhrasesToggle" checked> Фразовые';nav.appendChild(phrasesToggle);
-  const finish=document.getElementById("finishBulk");finish.textContent="✓ Finish selection";finish.classList.add("toolbar-selection");nav.appendChild(finish);
+  const finish=document.getElementById("finishBulk");finish.textContent="✓ Finish selection";finish.classList.add("toolbar-selection");finish.title="Finish colour selection";nav.insertBefore(finish,document.getElementById("wordStats"));
+  document.getElementById("hideColoursToggle").addEventListener("change",e=>document.body.classList.toggle("hide-word-colours",e.target.checked));
   document.getElementById("clearBulk").remove();
   dock.querySelector("#dockWordDetails").replaceWith(document.getElementById("wordDetails"));
   document.querySelector(".header-layout").appendChild(document.getElementById("playerCard"));
-  document.getElementById("hideColoursToggle").addEventListener("change",e=>document.body.classList.toggle("hide-word-colours",e.target.checked));
   const fontSlider=document.getElementById("dockFontSize"),fontLabel=document.getElementById("dockFontSizeLabel"),oldFontSlider=document.getElementById("lessonFontSize"),oldFontLabel=document.getElementById("lessonFontSizeLabel");
-  const applyFontSize=size=>{size=Math.max(85,Math.min(150,Number(size)||100));document.getElementById("readingText").style.fontSize=(1.12*size/100)+"rem";fontSlider.value=String(size);fontLabel.textContent=size+"%";if(oldFontSlider)oldFontSlider.value=String(size);if(oldFontLabel)oldFontLabel.textContent=size+"%";try{localStorage.setItem("bevl_font_size",String(size))}catch(e){}};
+  const applyFontSize=size=>{size=Math.max(50,Math.min(150,Number(size)||100));document.getElementById("readingText").style.fontSize=(1.12*size/100)+"rem";applyDictionaryFont(size);fontSlider.value=String(size);fontLabel.textContent=size+"%";if(oldFontSlider)oldFontSlider.value=String(size);if(oldFontLabel)oldFontLabel.textContent=size+"%";try{localStorage.setItem("bevl_font_size",String(size))}catch(e){}};
   fontSlider.addEventListener("input",e=>applyFontSize(e.target.value));
   if(oldFontSlider)oldFontSlider.addEventListener("input",e=>applyFontSize(e.target.value));
   const savedFont=Number(localStorage.getItem("bevl_font_size"))||100;applyFontSize(savedFont);
-  document.getElementById("hideButtonsToggle").addEventListener("change",e=>document.body.classList.toggle("hide-word-outlines",e.target.checked));
-  document.getElementById("ratePhrasesToggle").addEventListener("change",e=>{ratePhrasesInBulk=e.target.checked;updateBulkStatus()});
 })();
 const STORAGE_KEY = "britishEnglishVocabularyLab_v1";
 const RATINGS = [
@@ -326,7 +354,7 @@ function showView(id){
 }
 document.querySelectorAll("nav button[data-view]").forEach(b=>b.addEventListener("click",()=>{if(!b.disabled)showView(b.dataset.view)}));
 document.getElementById("toggleLessonForm").addEventListener("click",()=>{const form=document.getElementById("lessonForm");const opening=form.classList.contains("lesson-form-collapsed");form.classList.toggle("lesson-form-collapsed",!opening);document.getElementById("toggleLessonForm").textContent=opening?"− Close form":"＋ Add lesson";if(opening)document.getElementById("lessonTitle").focus()});
-document.getElementById("lessonFontSize").addEventListener("input",e=>{const size=Number(e.target.value);document.getElementById("readingText").style.fontSize=(1.12*size/100)+"rem";document.getElementById("lessonFontSizeLabel").textContent=size+"%";localStorage.setItem("bevl_font_size",String(size))});
+document.getElementById("lessonFontSize").addEventListener("input",e=>{const size=Number(e.target.value);document.getElementById("readingText").style.fontSize=(1.12*size/100)+"rem";applyDictionaryFont(size);document.getElementById("dockFontSize").value=String(size);document.getElementById("dockFontSizeLabel").textContent=size+"%";document.getElementById("lessonFontSizeLabel").textContent=size+"%";localStorage.setItem("bevl_font_size",String(size))});
 
 function getLesson(){return state.lessons.find(l=>l.id===currentLessonId)||null}
 function splitSentences(source){
@@ -440,7 +468,7 @@ function openLesson(id){
   const savedFont=Number(localStorage.getItem("bevl_font_size"))||100;document.getElementById("lessonFontSize").value=String(savedFont);document.getElementById("lessonFontSizeLabel").textContent=savedFont+"%";document.getElementById("readingText").style.fontSize=(1.12*savedFont/100)+"rem";document.body.classList.add("lesson-open");
   stopAudio(true);currentLessonId=id;currentSentence=0;activeWord=null;activeContext="";bulkMode=false;bulkRating=null;selectedBulkWords.clear();
   document.getElementById("navCurrent").disabled=false;document.getElementById("currentTitle").textContent=l.title;document.getElementById("currentTopic").textContent=l.topic||"";
-  document.getElementById("toolbarTitle").textContent=l.title;document.getElementById("toolbarTopic").textContent=l.topic||"";document.getElementById("toolbarSentenceCount").textContent=lessonSentences(l.text).length+" sentences";
+  document.getElementById("toolbarTitle").textContent=l.title;document.getElementById("toolbarTopic").textContent=l.topic||"";const stats=lessonWordStats(l);document.getElementById("toolbarSentenceCount").textContent=`S.${lessonSentences(l.text).length} · W.${stats.total} · U.${stats.unique}`;
   renderLessonStats();renderColorPanel();renderReading();renderWordStats();showView("lessonView");document.getElementById("playerStatus").textContent="Ready";
 }
 function renderLessonStats(){
@@ -538,7 +566,7 @@ function renderWordStats(){
     });
     root.appendChild(b);
   });
-  const sentenceBadge=document.getElementById("toolbarSentenceCount");if(sentenceBadge)sentenceBadge.textContent=lessonSentences(l.text).length+" sentences";
+  const sentenceBadge=document.getElementById("toolbarSentenceCount");if(sentenceBadge){const stats=lessonWordStats(l);sentenceBadge.textContent=`S.${lessonSentences(l.text).length} · W.${stats.total} · U.${stats.unique}`;}
 }
 function showWordDetails(word,sentence,isPhrase=false,clickedWord=word){
   activeWord=word;activeContext=sentence;
@@ -646,7 +674,7 @@ function renderDictionary(keepExpanded=false){
     if(filter==="unsaved"&&String(rec.translation||"").trim())return false;
     if(["1","2","3","4","5"].includes(filter)&&String(rec.rating)!==filter)return false;
     if(type==="words"&&isPhrase||type==="phrases"&&!isPhrase)return false;
-    if(type==="extra"&&!(rec.meanings||[]).length)return false;
+    if(type==="extra"&&!String(rec.contextTranslation||"").trim()&&!(rec.meanings||[]).length)return false;
     if(type==="unrated"&&!meaningHasRating(rec,false))return false;
     if(type==="low"&&!([1,2].includes(Number(rec.rating))||meaningHasRating(rec,true)))return false;
     return true;
@@ -658,36 +686,41 @@ function renderDictionary(keepExpanded=false){
   visibleWords.forEach(([key,rec])=>{
     const tr=document.createElement("tr");tr.dataset.wordKey=key;
     const selectCell=document.createElement("td"),check=document.createElement("input");check.type="checkbox";check.style.width="auto";check.checked=selectedDictionaryWords.has(key);check.setAttribute("aria-label","Select "+(rec.word||key));check.addEventListener("change",()=>{if(check.checked)selectedDictionaryWords.add(key);else selectedDictionaryWords.delete(key)});selectCell.appendChild(check);
-    const wordCell=document.createElement("td"),expand=document.createElement("button");expand.className="btn meaning-toggle";expand.textContent="▸";expand.setAttribute("aria-label","Expand meanings for "+(rec.word||key));const label=document.createElement("strong");label.textContent=rec.word||key;const avg=document.createElement("div");avg.className="small";avg.textContent="Average: "+ratingLabel(rec);wordCell.append(expand,document.createTextNode(" "),label,avg);
-    const mainCell=document.createElement("td"),mainInput=document.createElement("input");mainInput.value=rec.translation||"";mainInput.placeholder="Main translation";mainCell.appendChild(mainInput);
-    const ratingCell=document.createElement("td"),ratingSelect=document.createElement("select");RATINGS.filter(r=>r.value>0).forEach(r=>ratingSelect.add(new Option(r.label,String(r.value))));ratingSelect.value=String(rec.rating);ratingCell.appendChild(ratingSelect);
-    const saveCell=document.createElement("td"),save=document.createElement("button");save.className="btn";save.textContent="Save";save.addEventListener("click",()=>{rec.translation=mainInput.value.trim();rec.rating=Number(ratingSelect.value);rec.updatedAt=new Date().toISOString();saveState();renderDictionary(true);renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}});saveCell.appendChild(save);
+    const wordCell=document.createElement("td");const label=document.createElement("strong");label.className="word-name";label.textContent=rec.word||key;wordCell.append(label);
+    const mainCell=document.createElement("td"),mainInput=document.createElement("input");mainInput.value=rec.translation||"";mainInput.placeholder="Main translation";mainInput.style.minWidth="90px";mainCell.appendChild(mainInput);const sync=document.createElement("button");sync.type="button";sync.className="btn sync-translation";sync.title="Look up this word in Google Translate";sync.textContent="↗";sync.addEventListener("click",()=>window.open("https://translate.google.com/?sl=en&tl=ru&text="+encodeURIComponent(rec.word||key)+"&op=translate","_blank","noopener"));mainCell.appendChild(sync);
+    const extraCell=document.createElement("td"),extraInput=document.createElement("input");extraInput.className="extra-translation";extraInput.value=rec.contextTranslation||"";extraInput.placeholder="Extra translation";extraCell.appendChild(extraInput);
+    const ratingCell=document.createElement("td"),ratingSelect=document.createElement("select");RATINGS.forEach(r=>ratingSelect.add(new Option(r.label,String(r.value))));ratingSelect.value=String(rec.rating);ratingSelect.dataset.rating=String(rec.rating);ratingSelect.classList.add("dictionary-rating-colour");ratingSelect.addEventListener("change",()=>{ratingSelect.dataset.rating=ratingSelect.value;ratingSelect.style.color=ratingSelect.value==="0"?"#243247":contrastColor(customPalette[Number(ratingSelect.value)]||"#ffffff")});ratingCell.appendChild(ratingSelect);
+    const saveCell=document.createElement("td"),save=document.createElement("button");save.className="btn";save.textContent="Save";save.addEventListener("click",()=>{rec.translation=mainInput.value.trim();rec.contextTranslation=extraInput.value.trim();rec.rating=Number(ratingSelect.value);rec.updatedAt=new Date().toISOString();saveState();renderDictionary(true);renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}});saveCell.appendChild(save);
     const deleteCell=document.createElement("td"),del=document.createElement("button");del.className="btn danger";del.textContent="Delete";del.addEventListener("click",()=>{if(!confirm(`Delete “${rec.word||key}” and all its meanings from your dictionary?`))return;delete state.words[key];selectedDictionaryWords.delete(key);saveState();renderDictionary();renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}});deleteCell.appendChild(del);
-    tr.append(selectCell,wordCell,mainCell,ratingCell,saveCell,deleteCell);tbody.appendChild(tr);const owner="word:"+key;makeMeaningRows(rec,tr,"word",key);const detail=tbody.lastElementChild;detail.hidden=keepExpanded?(!previouslyOpen.has(owner)&&!allDictionaryExpanded):!allDictionaryExpanded;
-    expand.addEventListener("click",()=>{detail.hidden=!detail.hidden;expand.textContent=detail.hidden?"▸":"▾"});expand.textContent=detail.hidden?"▸":"▾";tr._dictionaryInputs={mainInput,ratingSelect};
+    tr.append(selectCell,wordCell,mainCell,extraCell,ratingCell,saveCell,deleteCell);tbody.appendChild(tr);tr._dictionaryInputs={mainInput,extraInput,ratingSelect};
   });
   const phraseRows=document.getElementById("phraseRows");phraseRows.replaceChildren();
   const visiblePhrases=type==="words"?[]:sortEntries(phraseEntries.filter(([k,r])=>matches(k,r,true)),true);
   visiblePhrases.forEach(([key,rec])=>{
-    const tr=document.createElement("tr"),word=document.createElement("td"),expand=document.createElement("button");expand.className="btn meaning-toggle";expand.textContent="▸";expand.setAttribute("aria-label","Expand meanings for "+(rec.phrase||key));const name=document.createElement("strong");name.textContent=rec.phrase||key;const avg=document.createElement("div");avg.className="small";avg.textContent="Average: "+ratingLabel(rec);word.append(expand,document.createTextNode(" "),name,avg);tr.appendChild(word);
-    const mainTd=document.createElement("td"),main=document.createElement("input");main.value=rec.translation||"";main.placeholder="Main phrase translation";mainTd.appendChild(main);tr.appendChild(mainTd);
-    const ratingTd=document.createElement("td"),rating=document.createElement("select");RATINGS.filter(r=>r.value>0).forEach(r=>rating.add(new Option(r.label,String(r.value))));rating.value=String(rec.rating);ratingTd.appendChild(rating);tr.appendChild(ratingTd);
-    const saveTd=document.createElement("td"),save=document.createElement("button");save.className="btn";save.textContent="Save";save.addEventListener("click",()=>{rec.translation=main.value.trim();rec.rating=Number(rating.value);rec.updatedAt=new Date().toISOString();saveState();renderDictionary(true);renderOverallStats()});saveTd.appendChild(save);tr.appendChild(saveTd);
+    const tr=document.createElement("tr"),word=document.createElement("td"),name=document.createElement("strong");name.textContent=rec.phrase||key;word.append(name);tr.appendChild(word);
+    const mainTd=document.createElement("td"),main=document.createElement("input");main.value=rec.translation||"";main.placeholder="Main phrase translation";mainTd.appendChild(main);const syncPhrase=document.createElement("button");syncPhrase.type="button";syncPhrase.className="btn sync-translation";syncPhrase.textContent="↗";syncPhrase.title="Look up this phrasal verb in Google Translate";syncPhrase.addEventListener("click",()=>window.open("https://translate.google.com/?sl=en&tl=ru&text="+encodeURIComponent(rec.phrase||key)+"&op=translate","_blank","noopener"));mainTd.appendChild(syncPhrase);tr.appendChild(mainTd);const extraPhraseTd=document.createElement("td"),extraPhrase=document.createElement("input");extraPhrase.value=rec.contextTranslation||"";extraPhrase.placeholder="Extra translation";extraPhraseTd.appendChild(extraPhrase);tr.appendChild(extraPhraseTd);
+    const ratingTd=document.createElement("td"),rating=document.createElement("select");RATINGS.forEach(r=>rating.add(new Option(r.label,String(r.value))));rating.value=String(rec.rating);rating.dataset.rating=String(rec.rating);rating.classList.add("dictionary-rating-colour");rating.addEventListener("change",()=>{rating.dataset.rating=rating.value;rating.style.color=rating.value==="0"?"#243247":contrastColor(customPalette[Number(rating.value)]||"#ffffff")});ratingTd.appendChild(rating);tr.appendChild(ratingTd);
+    const saveTd=document.createElement("td"),save=document.createElement("button");save.className="btn";save.textContent="Save";save.addEventListener("click",()=>{rec.translation=main.value.trim();rec.contextTranslation=extraPhrase.value.trim();rec.rating=Number(rating.value);rec.updatedAt=new Date().toISOString();saveState();renderDictionary(true);renderOverallStats()});saveTd.appendChild(save);tr.appendChild(saveTd);
     const delTd=document.createElement("td"),del=document.createElement("button");del.className="btn danger";del.textContent="Delete";del.addEventListener("click",()=>{if(confirm(`Delete phrasal verb “${rec.phrase||key}” and all its meanings?`)){delete state.phrases[key];saveState();renderDictionary();renderOverallStats();if(currentLessonId)renderReading()}});delTd.appendChild(del);tr.appendChild(delTd);phraseRows.appendChild(tr);
-    const owner="phrase:"+key;makeMeaningRows(rec,tr,"phrase",key);const detail=phraseRows.lastElementChild;detail.hidden=keepExpanded?(!previouslyOpen.has(owner)&&!allDictionaryExpanded):!allDictionaryExpanded;expand.addEventListener("click",()=>{detail.hidden=!detail.hidden;expand.textContent=detail.hidden?"▸":"▾"});expand.textContent=detail.hidden?"▸":"▾";
+    
   });
   const summary=document.getElementById("dictionarySummary");summary.replaceChildren();const ratedWords=wordEntries.length,ratedPhrases=phraseEntries.length;summary.append(makeStat("Ordinary words",ratedWords),makeStat("Phrasal verbs",ratedPhrases),makeStat("Visible entries",visibleWords.length+visiblePhrases.length),makeStat("Selected words",selectedDictionaryWords.size));
 }
 let allDictionaryExpanded=false;
+function applyDictionaryFont(value){const size=Math.max(50,Math.min(150,Number(value)||100));document.getElementById("dictionaryTable").style.fontSize=(.88*size/100)+"rem";document.getElementById("phraseDictionaryTable").style.fontSize=(.88*size/100)+"rem";}
+function applySharedFontSize(value){applyDictionaryFont(value);}
+const savedDictionaryFont=Number(localStorage.getItem("bevl_font_size"))||100;applyDictionaryFont(savedDictionaryFont);
+function renderDictionaryAlphabet(){const root=document.getElementById("dictionaryAlphabet");root.replaceChildren();const up=document.createElement("button");up.className="btn";up.textContent="↑";up.title="Previous starting letter";up.addEventListener("click",()=>jumpDictionaryLetter(-1));root.appendChild(up);for(const ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {const b=document.createElement("button");b.className="btn";b.textContent=ch;b.dataset.letter=ch;b.addEventListener("click",()=>jumpDictionaryLetter(0,ch));root.appendChild(b)}const down=document.createElement("button");down.className="btn";down.textContent="↓";down.title="Next starting letter";down.addEventListener("click",()=>jumpDictionaryLetter(1));root.appendChild(down)}
+function jumpDictionaryLetter(direction,letter){const rows=[...document.querySelectorAll("#dictionaryRows tr[data-word-key]")];if(!rows.length)return;const letters=[...new Set(rows.map(r=>(r.dataset.wordKey||"").charAt(0).toUpperCase()).filter(c=>/[A-Z]/.test(c)))].sort();if(!letters.length)return;let target=letter;if(!target){const current=window.dictionaryCurrentLetter||letters[0];let i=letters.indexOf(current);if(i<0)i=0;target=letters[(i+direction+letters.length)%letters.length]}if(!letters.includes(target)){target=letters.find(c=>c>=target)||letters[0]}window.dictionaryCurrentLetter=target;const row=rows.find(r=>(r.dataset.wordKey||"").toUpperCase().startsWith(target));if(row){row.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll("#dictionaryAlphabet button[data-letter]").forEach(b=>b.classList.toggle("active",b.dataset.letter===target))}}
+renderDictionaryAlphabet();
 document.getElementById("dictionarySearch").addEventListener("input",renderDictionary);
 document.getElementById("dictionaryFilter").addEventListener("change",renderDictionary);
 document.getElementById("dictionaryTypeFilter").addEventListener("change",renderDictionary);
-document.getElementById("expandAllDictionary").addEventListener("click",()=>{allDictionaryExpanded=true;renderDictionary()});
-document.getElementById("collapseAllDictionary").addEventListener("click",()=>{allDictionaryExpanded=false;renderDictionary()});
+
 document.getElementById("selectAllDictionary").addEventListener("click",()=>{document.querySelectorAll("#dictionaryRows tr[data-word-key]").forEach(tr=>selectedDictionaryWords.add(tr.dataset.wordKey));renderDictionary()});
 document.getElementById("clearDictionarySelection").addEventListener("click",()=>{selectedDictionaryWords.clear();renderDictionary()});
 document.getElementById("saveSelectedDictionary").addEventListener("click",()=>{
-  let count=0;document.querySelectorAll("#dictionaryRows tr[data-word-key]").forEach(tr=>{const key=tr.dataset.wordKey;if(!selectedDictionaryWords.has(key))return;const rec=state.words[key],inputs=tr._dictionaryInputs;if(!rec||!inputs)return;rec.translation=inputs.mainInput.value.trim();rec.rating=Number(inputs.ratingSelect.value);rec.updatedAt=new Date().toISOString();count++});
+  let count=0;document.querySelectorAll("#dictionaryRows tr[data-word-key]").forEach(tr=>{const key=tr.dataset.wordKey;if(!selectedDictionaryWords.has(key))return;const rec=state.words[key],inputs=tr._dictionaryInputs;if(!rec||!inputs)return;rec.translation=inputs.mainInput.value.trim();rec.contextTranslation=inputs.extraInput.value.trim();rec.rating=Number(inputs.ratingSelect.value);rec.updatedAt=new Date().toISOString();count++});
   if(!count){alert("Select at least one visible dictionary entry first.");return}saveState();renderDictionary();renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}
 });
 document.getElementById("deleteSelectedDictionary").addEventListener("click",()=>{
@@ -751,11 +784,23 @@ document.getElementById("importData").addEventListener("change",async e=>{
     const byId=new Map(state.lessons.map(l=>[l.id,l]));imported.lessons.forEach(l=>{if(l.id&&l.title&&l.text)byId.set(l.id,l)});state.lessons=[...byId.values()];
     Object.entries(imported.words).forEach(([k,v])=>{if(isValidEnglishWord(k)&&v&&typeof v==="object"&&Number(v.rating)>=1&&Number(v.rating)<=5)state.words[wordKey(k)]={...(state.words[wordKey(k)]||{}),...v,contextTranslation:v.contextTranslation||"",contextSentence:v.contextSentence||""}});
     Object.entries(imported.phrases||{}).forEach(([k,v])=>{if(v&&Number(v.rating)>=1&&Number(v.rating)<=5)state.phrases[wordKey(k)]={...(state.phrases[wordKey(k)]||{}),...v}});
-    saveState();renderLessons();renderDictionary();renderOverallStats();document.getElementById("backupStatus").textContent="Backup imported successfully.";
-  }catch(err){document.getElementById("backupStatus").textContent="Import failed: "+err.message}
+    saveState();
+renderLessons();renderDictionary();renderOverallStats();applyPalette();document.getElementById("backupStatus").textContent="Backup imported successfully.";  }catch(err){document.getElementById("backupStatus").textContent="Import failed: "+err.message}
   finally{e.target.value=""}
 });
-renderLessons();renderDictionary();renderOverallStats();
+
+// Settings popover: compact controls live in one place.
+const settingsButton=document.getElementById("settingsButton"),settingsPopover=document.getElementById("settingsPopover");settingsButton.addEventListener("click",()=>{const open=!settingsPopover.classList.contains("open");settingsPopover.classList.toggle("open",open);settingsButton.setAttribute("aria-expanded",String(open))});document.getElementById("closeSettings").addEventListener("click",()=>{settingsPopover.classList.remove("open");settingsButton.setAttribute("aria-expanded","false")});document.addEventListener("keydown",e=>{if(e.key==="Escape"){settingsPopover.classList.remove("open");settingsButton.setAttribute("aria-expanded","false");document.getElementById("colorEditor").classList.remove("open")}});
+// User-customisable rating palette, persisted independently of lesson data.
+const DEFAULT_PALETTE={5:"#39e639",4:"#176b32",3:"#2878e8",2:"#ffe34d",1:"#e53935",0:"#ffffff"};let customPalette={...DEFAULT_PALETTE};try{const stored=JSON.parse(localStorage.getItem("bevl_custom_palette")||"{}");Object.keys(DEFAULT_PALETTE).forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(stored[k]||""))customPalette[k]=stored[k]})}catch(e){}
+function applyPalette(){Object.keys(customPalette).forEach(k=>document.documentElement.style.setProperty("--rating"+k,customPalette[k]));RATINGS.forEach(r=>{r.color=customPalette[r.value];const el=document.querySelectorAll(".color-choice."+r.cls);el.forEach(node=>{node.style.background=customPalette[r.value];node.style.color=contrastColor(customPalette[r.value])})});document.querySelectorAll(".word.c0,.word.c1,.word.c2,.word.c3,.word.c4,.word.c5").forEach(el=>{const n=Number((el.className.match(/\bc([0-5])\b/)||[])[1]);el.style.background=customPalette[n];el.style.color=n===0?"#243247":contrastColor(customPalette[n])})}
+function contrastColor(hex){const h=hex.replace("#","");const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return (r*299+g*587+b*114)/1000>155?"#17202b":"#ffffff"}
+function renderColorEditor(){const root=document.getElementById("colorEditorRows");root.replaceChildren();RATINGS.forEach(r=>{const row=document.createElement("div");row.className="color-edit-row";const color=document.createElement("input");color.type="color";color.value=customPalette[r.value];color.dataset.rating=r.value;const title=document.createElement("strong");title.textContent=(r.value===0?"Not rated":("Rating "+r.value));const text=document.createElement("input");text.type="text";text.value=customPalette[r.value];text.setAttribute("aria-label","Hex colour for "+title.textContent);color.addEventListener("input",()=>{text.value=color.value});text.addEventListener("input",()=>{if(/^#[0-9a-f]{6}$/i.test(text.value))color.value=text.value});row.append(color,title,text);root.appendChild(row)})}
+document.getElementById("openColorEditor").addEventListener("click",()=>{renderColorEditor();document.getElementById("colorEditor").classList.add("open")});document.getElementById("closeColorEditor").addEventListener("click",()=>document.getElementById("colorEditor").classList.remove("open"));document.getElementById("saveColorEditor").addEventListener("click",()=>{document.querySelectorAll("#colorEditorRows .color-edit-row").forEach(row=>{const c=row.querySelector('input[type="color"]');customPalette[c.dataset.rating]=c.value});localStorage.setItem("bevl_custom_palette",JSON.stringify(customPalette));applyPalette();renderColorPanel();renderWordStats();document.getElementById("colorEditor").classList.remove("open")});document.getElementById("resetColorEditor").addEventListener("click",()=>{customPalette={...DEFAULT_PALETTE};renderColorEditor()});applyPalette();
+// The Settings text-size slider controls both lesson and dictionary text; the dictionary has no duplicate slider.
+const settingsFont=document.getElementById("dockFontSize"),settingsFontLabel=document.getElementById("dockFontSizeLabel");settingsFont.addEventListener("input",e=>{settingsFontLabel.textContent=e.target.value+"%";const size=Number(e.target.value);document.getElementById("readingText").style.fontSize=(1.12*size/100)+"rem";applyDictionaryFont(size);document.getElementById("lessonFontSize").value=String(size);localStorage.setItem("bevl_font_size",String(size))});settingsFont.value=String(Math.max(50,Math.min(150,Number(localStorage.getItem("bevl_font_size"))||100)));settingsFontLabel.textContent=settingsFont.value+"%";const oldSpeed=Number(localStorage.getItem("bevl_speed"));if(oldSpeed>=.5&&oldSpeed<=1.5)document.getElementById("speed").value=String(oldSpeed);document.getElementById("speedLabel").textContent=Number(document.getElementById("speed").value).toFixed(1)+"×";document.getElementById("speed").addEventListener("input",e=>{document.getElementById("speedLabel").textContent=Number(e.target.value).toFixed(1)+"×";localStorage.setItem("bevl_speed",e.target.value)});
+
+renderLessons();renderDictionary();renderOverallStats();applyPalette();
 </script>
 </body>
 </html>

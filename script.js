@@ -2217,3 +2217,75 @@ async function bulkAutoTranslate() {
     renderWords();
     alert(`Успешно обновлено слов: ${total}`);
 }
+
+
+let mediaRecorder;
+let audioChunks = [];
+let recordedAudioBlob = null;
+let audioElement = null;
+
+const btnRecord = document.getElementById("btnRecord");
+const btnPlayRecorded = document.getElementById("btnPlayRecorded");
+const recordStatus = document.getElementById("recordStatus");
+
+// Инициализация записи при нажатии
+btnRecord.addEventListener("click", async () => {
+  // Если запись уже идет — останавливаем её
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+    btnRecord.textContent = "🎙 Записать мой голос";
+    btnRecord.classList.remove("danger");
+    return;
+  }
+
+  try {
+    // Запрос доступа к микрофону
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      // Сохраняем записанный аудиофайл в память
+      recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const audioUrl = URL.createObjectURL(recordedAudioBlob);
+      
+      // Создаем или обновляем аудиоплеер для воспроизведения
+      if (!audioElement) {
+        audioElement = new Audio();
+      }
+      audioElement.src = audioUrl;
+      
+      btnPlayRecorded.disabled = false;
+      recordStatus.textContent = "Запись сохранена!";
+    };
+
+    mediaRecorder.start();
+    btnRecord.textContent = "⏹ Остановить запись";
+    btnRecord.classList.add("danger");
+    recordStatus.textContent = "Идет запись... Говорите.";
+
+  } catch (err) {
+    console.error("Ошибка доступа к микрофону:", err);
+    alert("Не удалось получить доступ к микрофону. Проверьте разрешения браузера.");
+    recordStatus.textContent = "Ошибка микрофона";
+  }
+});
+
+// Воспроизведение вашей реальной записи
+btnPlayRecorded.addEventListener("click", () => {
+  if (audioElement) {
+    audioElement.currentTime = 0;
+    audioElement.play();
+    recordStatus.textContent = "Воспроизведение вашего голоса...";
+    
+    audioElement.onended = () => {
+      recordStatus.textContent = "Готово";
+    };
+  }
+});

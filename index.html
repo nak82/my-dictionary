@@ -347,8 +347,15 @@
                 <div class="game-mode-card" onclick="startGame('voice_check')">
                     <div class="mode-icon">🎙️</div>
                     <div class="mode-title">Произношение (UK)</div>
-                    <div class="mode-desc">Говорите в микрофон, сравнивайте с эталоном</div>
-                </div>
+
+                 <div class="mode-desc">Говорите в микрофон, сравнивайте с эталоном</div>
+                <!-- Блок записи вашего голоса -->
+<div id="voiceRecorderBox" style="margin: 10px 0; padding: 8px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
+  <button id="btnRecord" class="btn primary" style="font-size: 0.8rem;">🎙 Записать мой голос</button>
+  <button id="btnPlayRecorded" class="btn" style="font-size: 0.8rem;" disabled>▶ Прослушать мой голос</button>
+  <span id="recordStatus" class="small muted" style="margin-left: 8px;">Готово к записи</span>
+</div>
+</div>
             </div>
         </div>
 
@@ -367,8 +374,7 @@
         </div>
 
     </div>
-<a href="text.html">Перейти на страницу текста 1 </a>
-<a href="text2.html">Перейти на страницу текста 2</a>
+<a href="text.html">Перейти на страницу текста</a>
     <script src="script.js"></script>
 </body>
 </html>
