@@ -139,7 +139,26 @@ body.lesson-open #lessonDock{display:block}body.lesson-open main{padding-bottom:
 /* Settings popover and compact dictionary navigation */
 #settingsButton{padding:6px 11px;font-size:.78rem}#settingsPopover{position:fixed;z-index:200;top:82px;right:max(12px,calc((100% - 1100px)/2));width:min(380px,calc(100vw - 24px));max-height:calc(100vh - 100px);overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 12px 35px #14243a30;padding:14px;display:none}#settingsPopover.open{display:block}#settingsPopover .setting-row{display:grid;grid-template-columns:1fr 1.2fr;gap:10px;align-items:center;margin:9px 0}#settingsPopover label{font-size:.84rem;margin:0}#settingsPopover input[type=range]{padding:0}#settingsPopover input[type=checkbox]{width:auto}#settingsPopover select{padding:7px;font-size:.85rem}#settingsPopover .setting-checks{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}#settingsPopover .setting-checks label{display:flex;gap:5px;align-items:center}#settingsPopover .setting-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}#settingsPopover .setting-actions button{padding:7px 9px;font-size:.82rem}
 #colorEditor{position:fixed;inset:0;background:#14243a70;z-index:250;display:none;align-items:center;justify-content:center;padding:16px}#colorEditor.open{display:flex}#colorEditor .editor-card{width:min(520px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;padding:18px;box-shadow:0 15px 40px #0003}#colorEditor .color-edit-row{display:grid;grid-template-columns:50px 1fr 100px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #e5eaf0}#colorEditor input[type=color]{width:48px;height:38px;padding:2px}#colorEditor input[type=text]{padding:7px;min-width:0}
-#dictionaryView .dictionary-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:7px 0}#dictionaryView .dictionary-tools input[type=range]{width:110px;padding:0}#dictionaryAlphabet{position:sticky;top:0;z-index:20;background:#f7f9fc;border:1px solid #dbe3ed;border-radius:8px;padding:5px;display:flex;gap:3px;flex-wrap:wrap;align-items:center;margin:8px 0}#dictionaryAlphabet button{padding:3px 6px;min-width:23px;font-size:.75rem;border-radius:5px}#dictionaryAlphabet button.active{background:var(--blue);color:white}#dictionaryTable th,#dictionaryTable td{padding:5px 4px}#dictionaryTable td input,#phraseDictionaryTable td input{min-width:75px;padding:5px;font-size:.82rem}#dictionaryTable .word-name{white-space:nowrap}#dictionaryTable .sync-translation{padding:4px 6px;font-size:.8rem;min-width:0}#dictionaryTable .extra-translation{min-width:100px}#dictionaryView .dictionary-top-controls{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}#dictionaryView .dictionary-top-controls button{padding:6px 9px;font-size:.8rem}#dictionaryView .dictionary-filter-row{display:flex;gap:7px;flex-wrap:wrap;align-items:end}#dictionaryView .dictionary-filter-row>div{flex:1;min-width:145px}#dictionaryView .dictionary-filter-row label{margin:4px 0;font-size:.8rem}#dictionaryView h2{margin-bottom:5px}#dictionaryView .dictionary-description{margin:0 0 7px;font-size:.78rem}
+#dictionaryView .dictionary-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:7px 0}#dictionaryView .dictionary-tools input[type=range]{width:110px;padding:0}#dictionaryAlphabet{position:sticky;top:0;z-index:20;background:#f7f9fc;border:1px solid #dbe3ed;border-radius:8px;padding:5px;display:flex;gap:3px;flex-wrap:wrap;align-items:center;margin:8px 0}#dictionaryAlphabet button{padding:3px 6px;min-width:23px;font-size:.75rem;border-radius:5px}#dictionaryAlphabet button.active{background:var(--blue);color:white}#dictionaryTable th,#dictionaryTable td{padding:5px 4px}#dictionaryTable td input,#phraseDictionaryTable td input{min-width:75px;padding:5px;font-size:.82rem}#dictionaryTable .word-name{white-space:nowrap}#dictionaryTable .sync-translation{padding:4px 6px;font-size:.8rem;min-width:0}#dictionaryTable .extra-translation{min-width:100px}#dictionaryView .dictionary-top-controls{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}#dictionaryView .dictionary-top-controls button{padding:6px 9px;font-size:.8rem}#dictionaryView .dictionary-filter-row{display:flex;gap:7px;flex-wrap:wrap;align-items:end}#dictionaryView .dictionary-filter-row>div{flex:1;min-width:145px}#dictionaryView .dictionary-filter-row label{margin:4px 0;font-size:.8rem}#dictionaryView h2{margin-bottom:5px}#dictionaryView .dictionary-description{display:none}
+#dictionaryView .dictionary-sticky-tools{position:sticky;top:99px;z-index:35;background:#fff;padding:4px 0 5px;border-bottom:1px solid #e2e8f0}
+#dictionaryView .dictionary-filter-row{display:flex;align-items:center;gap:6px;margin:4px 0}
+#dictionaryView .dictionary-filter-row>div{display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0}
+#dictionaryView .dictionary-filter-row label{display:inline;margin:0;font-size:.76rem;white-space:nowrap}
+#dictionaryView .dictionary-filter-row select{width:auto;max-width:180px;padding:5px 7px;font-size:.8rem}
+#dictionaryView .dictionary-top-controls{align-items:center}
+#dictionaryView .bulk-rating{display:flex;align-items:center;gap:4px;margin-right:auto}
+#dictionaryView .bulk-rating select{width:auto;max-width:180px;padding:5px 7px;font-size:.8rem}
+#dictionaryView .dictionary-pagination{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:5px 0;font-size:.8rem}
+#dictionaryView .dictionary-pagination button{padding:4px 7px;font-size:.78rem}
+#dictionaryView .dictionary-pagination input{width:54px;padding:4px 5px;font-size:.8rem}
+#dictionaryView .dictionary-pagination select{width:auto;padding:4px 5px;font-size:.8rem}
+#dictionaryAlphabet{position:sticky;top:99px;z-index:36;margin:0 0 5px;border-radius:6px;padding:4px;flex-wrap:nowrap;overflow-x:auto}
+#dictionaryAlphabet button{flex:0 0 auto}
+#dictionaryTable .word-name-wrap{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#dictionaryTable .sync-translation{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;padding:0}
+#dictionaryScrollRange{position:fixed;right:3px;top:34%;height:32vh;width:18px;z-index:60;display:none;writing-mode:vertical-lr;direction:rtl;accent-color:var(--blue);padding:0}
+body.dictionary-open #dictionaryScrollRange{display:block}
+@media(max-width:700px){#dictionaryView .dictionary-sticky-tools{top:58px}#dictionaryAlphabet{top:58px}#dictionaryView .dictionary-filter-row{flex-wrap:wrap}#dictionaryView .dictionary-top-controls{gap:4px}#dictionaryScrollRange{right:0;width:14px}}
 @media(max-width:700px){#settingsPopover{top:65px;right:8px}#dictionaryAlphabet{position:static}#dictionaryView .card{padding:9px}#dictionaryView .statline{gap:4px}#dictionaryView .stat{min-width:75px}}
 
 /* Latest compact toolbar and rating-colour refinements */
@@ -159,6 +178,40 @@ nav #finishBulk{order:0;margin:0 2px 0 0;padding:4px 6px;font-size:.65rem}
 .dictionary-rating-colour[data-rating="2"]{background:var(--rating2,#ffe34d);color:var(--rating2text,#332900)}
 .dictionary-rating-colour[data-rating="1"]{background:var(--rating1,#e53935);color:var(--rating1text,#fff)}
 body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color:#243247!important}
+
+
+/* Space-saving dictionary mode: keep the word list dominant */
+#dictionaryView .card{padding:7px 10px;margin-bottom:5px}
+#dictionaryView h2{display:none}
+#dictionaryView .dictionary-sticky-tools{top:99px;padding:3px 0 4px}
+#dictionaryView .dictionary-quickbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:3px 0}
+#dictionaryView .dictionary-pop-panel{position:relative;flex:0 0 auto}
+#dictionaryView .dictionary-pop-panel summary{list-style:none;cursor:pointer;border:1px solid #cbd5e1;border-radius:7px;padding:5px 9px;background:#f8fafc;font-size:.77rem;white-space:nowrap}
+#dictionaryView .dictionary-pop-panel summary::-webkit-details-marker{display:none}
+#dictionaryView .dictionary-pop-panel[open] summary{background:#eaf2ff;border-color:#8db4e8}
+#dictionaryView .dictionary-panel-body{position:absolute;left:0;top:calc(100% + 4px);z-index:80;width:min(420px,calc(100vw - 36px));padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 25px #172b4d25}
+#dictionaryView #dictionaryBulkPanel .dictionary-panel-body{width:min(600px,calc(100vw - 36px))}
+#dictionaryView .dictionary-panel-body #dictionarySearch{width:100%;margin:0 0 7px;padding:7px;font-size:.82rem}
+#dictionaryView .dictionary-panel-body .dictionary-filter-row{margin:0;gap:8px}
+#dictionaryView .dictionary-panel-body .dictionary-filter-row>div{flex:1}
+#dictionaryView .dictionary-panel-body .dictionary-filter-row select{max-width:100%;width:100%}
+#dictionaryView .dictionary-panel-body .dictionary-top-controls{margin:0;gap:4px}
+#dictionaryView .dictionary-panel-body .dictionary-top-controls button{padding:5px 7px;font-size:.75rem}
+#dictionaryView .dictionary-panel-body .bulk-rating{flex-wrap:wrap;margin:0}
+#dictionaryView .dictionary-summary-compact{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:.7rem;color:#526176;margin-left:auto}
+#dictionaryView .dictionary-summary-compact span{white-space:nowrap}
+#dictionaryView .dictionary-pagination{position:sticky;top:145px;z-index:30;background:#fff;padding:3px 0;margin:2px 0 4px;border-bottom:1px solid #e5eaf0;white-space:nowrap;flex-wrap:nowrap;overflow-x:auto}
+#dictionaryView .dictionary-pagination label{font-size:.72rem}
+#dictionaryView .dictionary-pagination button{padding:3px 5px;min-width:25px}
+#dictionaryView .dictionary-pagination select{max-width:75px}
+#dictionaryView .dictionary-pagination input{width:42px}
+#dictionaryView .statline{display:none}
+#dictionaryAlphabet{margin:0 0 4px;padding:3px;gap:2px}
+#dictionaryAlphabet button{min-width:21px;padding:2px 5px;font-size:.7rem}
+#dictionaryTable th,#dictionaryTable td{padding:4px 4px}
+#dictionaryTable td input,#dictionaryTable td select{padding:4px 5px;font-size:.78rem}
+#dictionaryTable .sync-translation{width:21px;height:21px}
+@media(max-width:700px){#dictionaryView .dictionary-sticky-tools{top:58px}#dictionaryView .dictionary-pagination{top:105px}#dictionaryView .dictionary-pop-panel[open]{position:static}#dictionaryView .dictionary-panel-body{position:fixed;left:10px;top:115px;width:calc(100vw - 20px)!important;max-height:65vh;overflow:auto}#dictionaryView .dictionary-quickbar{gap:4px}}
 
 </style>
 </head>
@@ -187,7 +240,7 @@ body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color
   <p id="voiceInfo" class="small" style="margin:8px 0 0"></p><p class="small" id="playerStatus" style="margin:4px 0 0">Ready</p>
 </div>
 <div id="colorEditor" aria-hidden="true"><div class="editor-card"><div class="row" style="align-items:center"><h2 style="margin:0;flex:1">Colour editor</h2><button type="button" class="btn" id="closeColorEditor">✕</button></div><p class="small">Choose any six colours for your word-rating buttons. Changes apply to lesson words and the rating palette.</p><div id="colorEditorRows"></div><div class="row" style="margin-top:12px"><button class="btn primary" id="saveColorEditor">Save colours</button><button class="btn" id="resetColorEditor">Reset defaults</button></div></div></div>
-<main>
+<input id="dictionaryScrollRange" type="range" min="0" max="100" value="0" aria-label="Scroll dictionary page" title="Scroll dictionary page"><main>
 <section id="lessonsView" class="view active">
   <div class="card">
     <div class="row" style="align-items:center"><h2 style="margin:0">Lessons</h2><button class="btn primary" id="toggleLessonForm" type="button">＋ Add lesson</button></div>
@@ -244,15 +297,22 @@ body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color
 <section id="dictionaryView" class="view">
   <div class="card">
     <h2>My dictionary</h2>
-    <p class="small">Each exact word form is stored separately. For example, “work”, “works”, “worked” and “working” can all have different ratings.</p>
-    <p class="small dictionary-description">One entry per row. Ratings stay independent; phrasal verbs are listed separately.</p>
-    <div class="dictionary-tools"><input id="dictionarySearch" placeholder="Search English or Russian…" aria-label="Search dictionary" style="flex:1;min-width:150px"></div>
-    <div id="dictionaryAlphabet" aria-label="Jump to first word by letter"></div>
-    <div class="dictionary-filter-row"><div><label for="dictionaryTypeFilter">Show</label><select id="dictionaryTypeFilter"><option value="all">All entries</option><option value="words">Ordinary words only</option><option value="phrases">Phrasal verbs only</option><option value="extra">Entries with extra translation</option></select></div><div><label for="dictionaryFilter">Main rating</label><select id="dictionaryFilter"><option value="all">All ratings</option><option value="unsaved">Missing main translation</option><option value="1">Rating 1</option><option value="2">Rating 2</option><option value="3">Rating 3</option><option value="4">Rating 4</option><option value="5">Rating 5</option></select></div></div>
-    <div class="dictionary-top-controls"><button class="btn" id="selectAllDictionary">Select all</button><button class="btn" id="clearDictionarySelection">Clear selection</button><button class="btn primary" id="saveSelectedDictionary">Save selected</button><button class="btn danger" id="deleteSelectedDictionary">Delete selected</button></div>
-    <div id="dictionarySummary" class="statline"></div>
+    <div class="dictionary-sticky-tools">
+      <div id="dictionaryAlphabet" aria-label="Jump to first word by letter"></div>
+      <div class="dictionary-quickbar">
+        <details id="dictionarySearchPanel" class="dictionary-pop-panel"><summary>⌕ Search &amp; filters</summary><div class="dictionary-panel-body">
+          <input id="dictionarySearch" placeholder="Search English or Russian…" aria-label="Search dictionary">
+          <div class="dictionary-filter-row"><div><label for="dictionaryTypeFilter">Show</label><select id="dictionaryTypeFilter"><option value="all">All entries</option><option value="words">Ordinary words only</option><option value="phrases">Phrasal verbs only</option><option value="extra">Entries with extra translation</option></select></div><div><label for="dictionaryFilter">Rating</label><select id="dictionaryFilter"><option value="all">All ratings</option><option value="unsaved">Missing main translation</option><option value="1">Rating 1</option><option value="2">Rating 2</option><option value="3">Rating 3</option><option value="4">Rating 4</option><option value="5">Rating 5</option></select></div></div>
+        </div></details>
+        <details id="dictionaryBulkPanel" class="dictionary-pop-panel"><summary>☑ Bulk actions</summary><div class="dictionary-panel-body">
+          <div class="dictionary-top-controls"><button class="btn" id="selectAllDictionary">Select all</button><button class="btn" id="clearDictionarySelection">Clear selection</button><button class="btn primary" id="saveSelectedDictionary">Save selected</button><button class="btn danger" id="deleteSelectedDictionary">Delete selected</button><div class="bulk-rating"><label for="bulkRatingSelect">Change rating</label><select id="bulkRatingSelect"><option value="">Choose…</option><option value="0">Not rated</option><option value="1">1 · Not known</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 · Known well</option></select><button class="btn" id="applyBulkRating">Apply</button></div></div>
+        </div></details>
+        <div id="dictionarySummary" class="statline"></div>
+      </div>
+      <div class="dictionary-pagination" id="dictionaryPagination"><label for="dictionaryPageSize">Per page</label><select id="dictionaryPageSize"><option value="20">20</option><option value="50" selected>50</option><option value="100">100</option><option value="all">All</option><option value="custom">Custom…</option></select><input id="dictionaryCustomPageSize" type="number" min="1" max="5000" value="50" aria-label="Custom entries per page" hidden><button class="btn" id="dictionaryFirstPage" title="First page">|◀</button><button class="btn" id="dictionaryPrevPage" title="Previous page">◀</button><span>Page</span><input id="dictionaryPageNumber" type="number" min="1" value="1" aria-label="Current page"><span id="dictionaryPageCount">of 1</span><button class="btn" id="dictionaryNextPage" title="Next page">▶</button><button class="btn" id="dictionaryLastPage" title="Last page">▶|</button></div>
+    </div>
     <div style="overflow-x:auto"><table id="dictionaryTable"><thead><tr><th>Select</th><th><button class="sort-heading" data-sort="word">Word / phrase ↕</button></th><th><button class="sort-heading" data-sort="translation">Main translation ↕</button></th><th>Extra translation</th><th><button class="sort-heading" data-sort="rating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="dictionaryRows"></tbody></table></div>
-    <div class="phrase-table"><h3>Phrasal verbs</h3><p class="small">A separate dictionary: knowing “pick” and “up” does not change your rating for “pick up”. Every meaning has its own translation, example and rating.</p><div style="overflow-x:auto"><table id="phraseDictionaryTable"><thead><tr><th><button class="sort-heading" data-sort="phrase">Phrasal verb ↕</button></th><th><button class="sort-heading" data-sort="phraseTranslation">Main translation ↕</button></th><th>Extra translation</th><th><button class="sort-heading" data-sort="phraseRating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="phraseRows"></tbody></table></div></div>
+    <div class="phrase-table"><h3>Phrasal verbs</h3><div style="overflow-x:auto"><table id="phraseDictionaryTable"><thead><tr><th><button class="sort-heading" data-sort="phrase">Phrasal verb ↕</button></th><th><button class="sort-heading" data-sort="phraseTranslation">Main translation ↕</button></th><th>Extra translation</th><th><button class="sort-heading" data-sort="phraseRating">Main rating ↕</button></th><th>Save</th><th>Delete</th></tr></thead><tbody id="phraseRows"></tbody></table></div></div>
   </div>
 </section>
 
@@ -349,7 +409,7 @@ function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
   document.querySelectorAll("nav button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
   if(id==="lessonsView") renderLessons();
-  if(id==="dictionaryView") renderDictionary();
+  if(id==="dictionaryView"){document.body.classList.add("dictionary-open");renderDictionary()}else{document.body.classList.remove("dictionary-open")}
   if(id==="statsView") renderOverallStats();
 }
 document.querySelectorAll("nav button[data-view]").forEach(b=>b.addEventListener("click",()=>{if(!b.disabled)showView(b.dataset.view)}));
@@ -682,12 +742,16 @@ function renderDictionary(keepExpanded=false){
   function sortEntries(entries,isPhrase){
     return entries.sort((a,b)=>{const [ak,ar]=a,[bk,br]=b;let av,bv;const k=dictionarySort.key;if(k==="rating"||k==="phraseRating"){av=Number(ar.rating)||0;bv=Number(br.rating)||0}else if(k==="translation"||k==="phraseTranslation"){av=ar.translation||"";bv=br.translation||""}else{av=(isPhrase?ar.phrase:ar.word)||ak;bv=(isPhrase?br.phrase:br.word)||bk}const cmp=typeof av==="number"&&typeof bv==="number"?av-bv:String(av).localeCompare(String(bv),"en-GB",{sensitivity:"base"});return cmp*dictionarySort.direction});
   }
-  const visibleWords=type==="phrases"?[]:sortEntries(wordEntries.filter(([k,r])=>matches(k,r,false)),false);
+  const filteredWords=type==="phrases"?[]:sortEntries(wordEntries.filter(([k,r])=>matches(k,r,false)),false);
+  window.dictionaryFilteredKeys=filteredWords.map(([key])=>key);
+  const pageSize=getDictionaryPageSize();const totalPages=Math.max(1,Math.ceil(filteredWords.length/pageSize));window.dictionaryPage=Math.max(1,Math.min(Number(window.dictionaryPage)||1,totalPages));
+  const visibleWords=pageSize>=filteredWords.length?filteredWords:filteredWords.slice((window.dictionaryPage-1)*pageSize,window.dictionaryPage*pageSize);
+  updateDictionaryPagination(filteredWords.length,totalPages,pageSize);
   visibleWords.forEach(([key,rec])=>{
     const tr=document.createElement("tr");tr.dataset.wordKey=key;
     const selectCell=document.createElement("td"),check=document.createElement("input");check.type="checkbox";check.style.width="auto";check.checked=selectedDictionaryWords.has(key);check.setAttribute("aria-label","Select "+(rec.word||key));check.addEventListener("change",()=>{if(check.checked)selectedDictionaryWords.add(key);else selectedDictionaryWords.delete(key)});selectCell.appendChild(check);
-    const wordCell=document.createElement("td");const label=document.createElement("strong");label.className="word-name";label.textContent=rec.word||key;wordCell.append(label);
-    const mainCell=document.createElement("td"),mainInput=document.createElement("input");mainInput.value=rec.translation||"";mainInput.placeholder="Main translation";mainInput.style.minWidth="90px";mainCell.appendChild(mainInput);const sync=document.createElement("button");sync.type="button";sync.className="btn sync-translation";sync.title="Look up this word in Google Translate";sync.textContent="↗";sync.addEventListener("click",()=>window.open("https://translate.google.com/?sl=en&tl=ru&text="+encodeURIComponent(rec.word||key)+"&op=translate","_blank","noopener"));mainCell.appendChild(sync);
+    const wordCell=document.createElement("td");const wordWrap=document.createElement("div");wordWrap.className="word-name-wrap";const label=document.createElement("strong");label.className="word-name";label.textContent=rec.word||key;wordWrap.append(label);const sync=document.createElement("button");sync.type="button";sync.className="btn sync-translation";sync.title="Look up this word in Google Translate";sync.textContent="↗";sync.addEventListener("click",()=>window.open("https://translate.google.com/?sl=en&tl=ru&text="+encodeURIComponent(rec.word||key)+"&op=translate","_blank","noopener"));wordWrap.append(sync);wordCell.append(wordWrap);
+    const mainCell=document.createElement("td"),mainInput=document.createElement("input");mainInput.value=rec.translation||"";mainInput.placeholder="Main translation";mainInput.style.minWidth="90px";mainCell.appendChild(mainInput);
     const extraCell=document.createElement("td"),extraInput=document.createElement("input");extraInput.className="extra-translation";extraInput.value=rec.contextTranslation||"";extraInput.placeholder="Extra translation";extraCell.appendChild(extraInput);
     const ratingCell=document.createElement("td"),ratingSelect=document.createElement("select");RATINGS.forEach(r=>ratingSelect.add(new Option(r.label,String(r.value))));ratingSelect.value=String(rec.rating);ratingSelect.dataset.rating=String(rec.rating);ratingSelect.classList.add("dictionary-rating-colour");ratingSelect.addEventListener("change",()=>{ratingSelect.dataset.rating=ratingSelect.value;ratingSelect.style.color=ratingSelect.value==="0"?"#243247":contrastColor(customPalette[Number(ratingSelect.value)]||"#ffffff")});ratingCell.appendChild(ratingSelect);
     const saveCell=document.createElement("td"),save=document.createElement("button");save.className="btn";save.textContent="Save";save.addEventListener("click",()=>{rec.translation=mainInput.value.trim();rec.contextTranslation=extraInput.value.trim();rec.rating=Number(ratingSelect.value);rec.updatedAt=new Date().toISOString();saveState();renderDictionary(true);renderOverallStats();if(currentLessonId){renderReading();renderWordStats()}});saveCell.appendChild(save);
@@ -704,18 +768,27 @@ function renderDictionary(keepExpanded=false){
     const delTd=document.createElement("td"),del=document.createElement("button");del.className="btn danger";del.textContent="Delete";del.addEventListener("click",()=>{if(confirm(`Delete phrasal verb “${rec.phrase||key}” and all its meanings?`)){delete state.phrases[key];saveState();renderDictionary();renderOverallStats();if(currentLessonId)renderReading()}});delTd.appendChild(del);tr.appendChild(delTd);phraseRows.appendChild(tr);
     
   });
-  const summary=document.getElementById("dictionarySummary");summary.replaceChildren();const ratedWords=wordEntries.length,ratedPhrases=phraseEntries.length;summary.append(makeStat("Ordinary words",ratedWords),makeStat("Phrasal verbs",ratedPhrases),makeStat("Visible entries",visibleWords.length+visiblePhrases.length),makeStat("Selected words",selectedDictionaryWords.size));
+  const summary=document.getElementById("dictionarySummary");summary.replaceChildren();summary.className="dictionary-summary-compact";[["Words",wordEntries.length],["Phrasal verbs",phraseEntries.length],["Visible",visibleWords.length+visiblePhrases.length],["Selected",selectedDictionaryWords.size]].forEach(([label,value])=>{const item=document.createElement("span");item.textContent=label+": "+value;summary.appendChild(item)});
 }
 let allDictionaryExpanded=false;
 function applyDictionaryFont(value){const size=Math.max(50,Math.min(150,Number(value)||100));document.getElementById("dictionaryTable").style.fontSize=(.88*size/100)+"rem";document.getElementById("phraseDictionaryTable").style.fontSize=(.88*size/100)+"rem";}
 function applySharedFontSize(value){applyDictionaryFont(value);}
 const savedDictionaryFont=Number(localStorage.getItem("bevl_font_size"))||100;applyDictionaryFont(savedDictionaryFont);
+function getDictionaryPageSize(){const mode=document.getElementById("dictionaryPageSize").value;if(mode==="all")return 999999;if(mode==="custom")return Math.max(1,Math.min(5000,Number(document.getElementById("dictionaryCustomPageSize").value)||50));return Number(mode)||50}
+function updateDictionaryPagination(total,totalPages,pageSize){const count=document.getElementById("dictionaryPageCount"),number=document.getElementById("dictionaryPageNumber"),custom=document.getElementById("dictionaryCustomPageSize");count.textContent=`of ${totalPages} · ${total} words`;number.value=String(window.dictionaryPage||1);number.max=String(totalPages);document.getElementById("dictionaryFirstPage").disabled=(window.dictionaryPage||1)<=1;document.getElementById("dictionaryPrevPage").disabled=(window.dictionaryPage||1)<=1;document.getElementById("dictionaryNextPage").disabled=(window.dictionaryPage||1)>=totalPages;document.getElementById("dictionaryLastPage").disabled=(window.dictionaryPage||1)>=totalPages;custom.hidden=document.getElementById("dictionaryPageSize").value!=="custom"}
+function changeDictionaryPage(next){const totalRows=(window.dictionaryFilteredKeys||[]).length;const pageSize=getDictionaryPageSize();window.dictionaryPage=Math.max(1,Math.min(next,Math.max(1,Math.ceil(totalRows/pageSize))));renderDictionary(true);document.getElementById("dictionaryAlphabet").scrollIntoView({block:"start",behavior:"smooth"})}
+document.getElementById("dictionaryPageSize").addEventListener("change",()=>{window.dictionaryPage=1;document.getElementById("dictionaryCustomPageSize").hidden=document.getElementById("dictionaryPageSize").value!=="custom";renderDictionary()});
+document.getElementById("dictionaryCustomPageSize").addEventListener("change",()=>{window.dictionaryPage=1;renderDictionary()});
+document.getElementById("dictionaryPageNumber").addEventListener("change",e=>changeDictionaryPage(Number(e.target.value)||1));
+document.getElementById("dictionaryFirstPage").addEventListener("click",()=>changeDictionaryPage(1));document.getElementById("dictionaryPrevPage").addEventListener("click",()=>changeDictionaryPage((window.dictionaryPage||1)-1));document.getElementById("dictionaryNextPage").addEventListener("click",()=>changeDictionaryPage((window.dictionaryPage||1)+1));document.getElementById("dictionaryLastPage").addEventListener("click",()=>{const size=getDictionaryPageSize(),total=Object.entries(state.words).filter(([k,r])=>isValidEnglishWord(k)&&Number(r.rating)>=1&&Number(r.rating)<=5).length;changeDictionaryPage(Math.max(1,Math.ceil(total/size))) });
+document.getElementById("applyBulkRating").addEventListener("click",()=>{const val=document.getElementById("bulkRatingSelect").value;if(val===""){alert("Choose a rating first.");return}const keys=[...selectedDictionaryWords].filter(k=>state.words[k]);if(!keys.length){alert("Select one or more ordinary words first.");return}keys.forEach(k=>{state.words[k].rating=Number(val);state.words[k].updatedAt=new Date().toISOString()});saveState();renderDictionary();renderOverallStats();if(currentLessonId){renderReading();renderWordStats()} });
+const dictionaryScroll=document.getElementById("dictionaryScrollRange");dictionaryScroll.addEventListener("input",()=>{const max=document.documentElement.scrollHeight-window.innerHeight;window.scrollTo({top:max*Number(dictionaryScroll.value)/100,behavior:"auto"})});window.addEventListener("scroll",()=>{if(document.body.classList.contains("dictionary-open")){const max=document.documentElement.scrollHeight-window.innerHeight;dictionaryScroll.value=max>0?String(Math.round(window.scrollY/max*100)):"0"}},{passive:true});
 function renderDictionaryAlphabet(){const root=document.getElementById("dictionaryAlphabet");root.replaceChildren();const up=document.createElement("button");up.className="btn";up.textContent="↑";up.title="Previous starting letter";up.addEventListener("click",()=>jumpDictionaryLetter(-1));root.appendChild(up);for(const ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {const b=document.createElement("button");b.className="btn";b.textContent=ch;b.dataset.letter=ch;b.addEventListener("click",()=>jumpDictionaryLetter(0,ch));root.appendChild(b)}const down=document.createElement("button");down.className="btn";down.textContent="↓";down.title="Next starting letter";down.addEventListener("click",()=>jumpDictionaryLetter(1));root.appendChild(down)}
-function jumpDictionaryLetter(direction,letter){const rows=[...document.querySelectorAll("#dictionaryRows tr[data-word-key]")];if(!rows.length)return;const letters=[...new Set(rows.map(r=>(r.dataset.wordKey||"").charAt(0).toUpperCase()).filter(c=>/[A-Z]/.test(c)))].sort();if(!letters.length)return;let target=letter;if(!target){const current=window.dictionaryCurrentLetter||letters[0];let i=letters.indexOf(current);if(i<0)i=0;target=letters[(i+direction+letters.length)%letters.length]}if(!letters.includes(target)){target=letters.find(c=>c>=target)||letters[0]}window.dictionaryCurrentLetter=target;const row=rows.find(r=>(r.dataset.wordKey||"").toUpperCase().startsWith(target));if(row){row.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll("#dictionaryAlphabet button[data-letter]").forEach(b=>b.classList.toggle("active",b.dataset.letter===target))}}
+function jumpDictionaryLetter(direction,letter){const keys=window.dictionaryFilteredKeys||[];if(!keys.length)return;const letters=[...new Set(keys.map(k=>String(k).charAt(0).toUpperCase()).filter(c=>/[A-Z]/.test(c)))].sort();if(!letters.length)return;let target=letter;if(!target){const current=window.dictionaryCurrentLetter||letters[0];let i=letters.indexOf(current);if(i<0)i=0;target=letters[(i+direction+letters.length)%letters.length]}if(!letters.includes(target)){target=letters.find(c=>c>=target)||letters[0]}window.dictionaryCurrentLetter=target;const index=keys.findIndex(k=>String(k).toUpperCase().startsWith(target));if(index>=0){const pageSize=getDictionaryPageSize();window.dictionaryPage=Math.floor(index/pageSize)+1;renderDictionary(true);const row=[...document.querySelectorAll("#dictionaryRows tr[data-word-key]")].find(r=>(r.dataset.wordKey||"").toUpperCase().startsWith(target));if(row)row.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll("#dictionaryAlphabet button[data-letter]").forEach(b=>b.classList.toggle("active",b.dataset.letter===target))}}
 renderDictionaryAlphabet();
-document.getElementById("dictionarySearch").addEventListener("input",renderDictionary);
-document.getElementById("dictionaryFilter").addEventListener("change",renderDictionary);
-document.getElementById("dictionaryTypeFilter").addEventListener("change",renderDictionary);
+document.getElementById("dictionarySearch").addEventListener("input",()=>{window.dictionaryPage=1;renderDictionary()});
+document.getElementById("dictionaryFilter").addEventListener("change",()=>{window.dictionaryPage=1;renderDictionary()});
+document.getElementById("dictionaryTypeFilter").addEventListener("change",()=>{window.dictionaryPage=1;renderDictionary()});
 
 document.getElementById("selectAllDictionary").addEventListener("click",()=>{document.querySelectorAll("#dictionaryRows tr[data-word-key]").forEach(tr=>selectedDictionaryWords.add(tr.dataset.wordKey));renderDictionary()});
 document.getElementById("clearDictionarySelection").addEventListener("click",()=>{selectedDictionaryWords.clear();renderDictionary()});
