@@ -1154,7 +1154,7 @@ function startGame(mode) {
 function exitGame() {
     if (audioStreamTimeoutId) clearTimeout(audioStreamTimeoutId);
     if (activeGame.sprintTimer) clearInterval(activeGame.sprintTimer);
-    if (micAudioStream) { micAudioStream.getTracks().forEach(track => track.stop()); micAudioStream = null; }
+    if (typeof cleanupVoiceCapture === 'function') cleanupVoiceCapture();
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     document.getElementById('gameSetupCard').style.display = 'block';
     document.getElementById('gamePlayArea').style.display = 'none';
@@ -1163,7 +1163,7 @@ function exitGame() {
 function stopGameAndShowSummary() {
     if (audioStreamTimeoutId) clearTimeout(audioStreamTimeoutId);
     if (activeGame.sprintTimer) clearInterval(activeGame.sprintTimer);
-    if (micAudioStream) { micAudioStream.getTracks().forEach(track => track.stop()); micAudioStream = null; }
+    if (typeof cleanupVoiceCapture === 'function') cleanupVoiceCapture();
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     showGameSummary();
 }
@@ -1406,88 +1406,227 @@ function checkDictationAnswer() {
     setTimeout(() => { activeGame.currentIndex++; renderGameStep(); }, 1400);
 }
 
-// 7. Произношение
+// 7. Произношение: запись собственного голоса + распознавание речи
 let micAudioStream = null;
-let audioContext = null;
-let micAnalyser = null;
-let micCheckInterval = null;
+let voiceMediaRecorder = null;
+let voiceAudioChunks = [];
+let voiceAudioUrl = null;
+let voiceRecognition = null;
+let voiceTranscript = '';
+let voiceTargetText = '';
+let voiceTargetTranslation = '';
+let voiceRecognitionSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+function getVoiceTranslation(text, item) {
+    const clean = String(text || '').trim().toLocaleLowerCase('en-GB');
+    const candidates = [item, ...(Array.isArray(dictionary) ? dictionary : [])].filter(Boolean);
+    const found = candidates.find(entry => String(entry.en || '').trim().toLocaleLowerCase('en-GB') === clean);
+    return found ? (found.mainRu || found.ru || found.translation || '') : '';
+}
 
 function renderVoiceCheckMode() {
     const container = document.getElementById('activeGameContainer');
     const item = activeGame.words[activeGame.currentIndex];
+    voiceTargetText = item.en || '';
+    voiceTargetTranslation = getVoiceTranslation(voiceTargetText, item);
+    voiceTranscript = '';
+    cleanupVoiceCapture();
 
     container.innerHTML = `
-        <div class="card" style="text-align: center; max-width: 450px; margin: 0 auto; padding: 20px;">
-            <div style="font-size: 13px; color: #64748b;">🎙️ Произношение (UK)</div>
-            <div style="font-size: 26px; font-weight: bold; color: #2c3e50; margin: 10px 0;">${item.en}</div>
-            <button class="btn-main" style="background:#0284c7; margin-bottom:15px;" onclick="speak('${item.en}')">🔊 Эталон UK</button>
+        <div class="card voice-practice-card" style="max-width:560px;margin:0 auto;padding:20px;">
+            <div style="text-align:center;font-size:13px;color:#64748b;">🎙️ Произношение · British English</div>
+            <div id="voiceTargetDisplay" style="font-size:26px;font-weight:700;color:#1e293b;text-align:center;margin:12px 0;overflow-wrap:anywhere;"></div>
+            <button type="button" class="btn-main" style="background:#0284c7;display:block;margin:0 auto 14px;" onclick="speak(voiceTargetText)">🔊 Прослушать образец</button>
 
-            <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:15px;">
-                <div id="micStatus" style="font-size:12px; color:#64748b; font-weight:bold; margin-bottom:8px;">Нажмите кнопку "Начать запись"</div>
-                <div style="display:flex; gap:6px;">
-                    <button id="btnRecToggle" class="btn-main" style="background:#ef4444; flex:1;" onclick="toggleMicRecording()">🎙️ Начать запись</button>
+            <div style="background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #cbd5e1;margin-bottom:12px;">
+                <label for="voicePhraseInput" style="margin:0 0 5px;">Можно заменить слово своей фразой</label>
+                <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                    <input id="voicePhraseInput" type="text" placeholder="Введите слово или целую фразу" style="flex:1;min-width:180px;" value="">
+                    <button type="button" class="btn" onclick="setVoicePracticePhrase()">Use phrase</button>
                 </div>
+                <div class="small" style="margin-top:4px;">Если оставить поле пустым, тренируем слово из словаря.</div>
             </div>
 
-            <div style="display:flex; gap:10px;">
-                <button class="btn-main" style="background:#ef4444;" onclick="recordVoiceStep(false)">❌ Повторить</button>
-                <button class="btn-main" style="background:#10b981;" onclick="recordVoiceStep(true)">✅ Засчитать</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                <button type="button" id="btnRecToggle" class="btn-main" style="background:#ef4444;flex:1;min-width:150px;" onclick="toggleMicRecording()">🎙️ Начать запись</button>
+                <button type="button" class="btn" onclick="speak(voiceTargetText)">🔊 Повторить образец</button>
+            </div>
+            <div id="micStatus" role="status" aria-live="polite" style="font-size:13px;color:#0284c7;font-weight:600;margin-bottom:10px;">Нажмите «Начать запись» и произнесите слово или фразу.</div>
+
+            <div style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:8px;">
+                <strong>Что услышал компьютер</strong>
+                <div id="voiceTranscript" style="background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:10px;min-height:42px;margin:6px 0;overflow-wrap:anywhere;color:#1e293b;">Пока нет распознанного текста.</div>
+                <div id="voiceTranslationWrap" style="display:none;margin:8px 0;"><span class="small">Перевод</span><div id="voiceTranslation" style="font-weight:600;color:#059669;"></div></div>
+                <div id="voiceRecordingPlayback" style="display:none;margin-top:10px;">
+                    <strong>Твоя запись</strong>
+                    <audio id="voiceRecordedAudio" controls playsinline style="width:100%;margin-top:6px;"></audio>
+                </div>
+                <div id="voiceSupportNote" class="small" style="margin-top:8px;"></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:15px;flex-wrap:wrap;">
+                <button type="button" class="btn" style="background:#fee2e2;color:#991b1b;flex:1;" onclick="recordVoiceStep(false)">↻ Повторить попытку</button>
+                <button type="button" class="btn" style="background:#d1fae5;color:#065f46;flex:1;" onclick="recordVoiceStep(true)">✓ Засчитать и дальше</button>
             </div>
         </div>
     `;
-    setTimeout(() => speak(item.en), 300);
+    document.getElementById('voiceTargetDisplay').textContent = voiceTargetText;
+    document.getElementById('voiceSupportNote').textContent = voiceRecognitionSupported
+        ? 'Распознавание речи: English (United Kingdom).'
+        : 'В этом браузере нет встроенного распознавания речи. Запись и прослушивание твоего голоса всё равно доступны; для текста попробуй Chrome или Edge.';
+    if (voiceTargetTranslation) {
+        document.getElementById('voiceTranslationWrap').style.display = 'block';
+        document.getElementById('voiceTranslation').textContent = voiceTargetTranslation;
+    }
+    setTimeout(() => speak(voiceTargetText), 300);
+}
+
+function setVoicePracticePhrase() {
+    const input = document.getElementById('voicePhraseInput');
+    if (!input) return;
+    const phrase = input.value.trim();
+    if (!phrase) {
+        const item = activeGame.words[activeGame.currentIndex];
+        voiceTargetText = item.en || '';
+        voiceTargetTranslation = getVoiceTranslation(voiceTargetText, item);
+    } else {
+        voiceTargetText = phrase;
+        voiceTargetTranslation = getVoiceTranslation(phrase, activeGame.words[activeGame.currentIndex]);
+    }
+    document.getElementById('voiceTargetDisplay').textContent = voiceTargetText;
+    const wrap = document.getElementById('voiceTranslationWrap');
+    if (voiceTargetTranslation) {
+        wrap.style.display = 'block';
+        document.getElementById('voiceTranslation').textContent = voiceTargetTranslation;
+    } else {
+        wrap.style.display = 'none';
+        document.getElementById('voiceTranslation').textContent = '';
+    }
+    document.getElementById('voiceTranscript').textContent = 'Готово. Теперь произнеси эту фразу.';
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    speak(voiceTargetText);
+}
+
+function stopVoiceRecognition() {
+    if (voiceRecognition) {
+        try { voiceRecognition.onresult = null; voiceRecognition.onerror = null; voiceRecognition.onend = null; voiceRecognition.stop(); } catch (e) {}
+        voiceRecognition = null;
+    }
+}
+
+function cleanupVoiceCapture() {
+    stopVoiceRecognition();
+    if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+        try { voiceMediaRecorder.onstop = null; voiceMediaRecorder.stop(); } catch (e) {}
+    }
+    voiceMediaRecorder = null;
+    if (micAudioStream) {
+        micAudioStream.getTracks().forEach(track => track.stop());
+        micAudioStream = null;
+    }
+    if (voiceAudioUrl) {
+        URL.revokeObjectURL(voiceAudioUrl);
+        voiceAudioUrl = null;
+    }
+    voiceAudioChunks = [];
 }
 
 async function toggleMicRecording() {
     const btn = document.getElementById('btnRecToggle');
     const status = document.getElementById('micStatus');
-
-    if (micAudioStream) {
-        micAudioStream.getTracks().forEach(track => track.stop());
+    if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
+        voiceMediaRecorder.stop();
+        stopVoiceRecognition();
+        if (micAudioStream) micAudioStream.getTracks().forEach(track => track.stop());
         micAudioStream = null;
-        if (micCheckInterval) clearInterval(micCheckInterval);
-        if (btn) { btn.innerText = '🎙️ Начать запись'; btn.style.background = '#ef4444'; }
-        if (status) status.innerText = '✅ Запись остановлена. Оцените результат выше.';
+        if (btn) { btn.textContent = '🎙️ Записать ещё раз'; btn.style.background = '#ef4444'; }
+        if (status) status.textContent = '⏳ Обрабатываем запись…';
         return;
     }
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+        if (status) status.textContent = 'Запись недоступна. Открой сайт через HTTPS или localhost и используй современный браузер.';
+        return;
+    }
+
+    cleanupVoiceCapture();
+    voiceTranscript = '';
+    const transcriptBox = document.getElementById('voiceTranscript');
+    if (transcriptBox) transcriptBox.textContent = 'Слушаем…';
+    const playback = document.getElementById('voiceRecordingPlayback');
+    if (playback) playback.style.display = 'none';
     try {
-        micAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        micAnalyser = audioContext.createAnalyser();
-        const source = audioContext.createMediaStreamSource(micAudioStream);
-        source.connect(micAnalyser);
-        micAnalyser.fftSize = 256;
-        const dataArray = new Uint8Array(micAnalyser.frequencyBinCount);
-
-        if (btn) { btn.innerText = '⏹ Остановить запись'; btn.style.background = '#dc2626'; }
-        
-        micCheckInterval = setInterval(() => {
-            micAnalyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            let average = sum / dataArray.length;
-            if (status) {
-                if (average > 10) {
-                    status.innerHTML = `<span style="color:#ef4444; font-weight:bold;">🔴 Запись... [Голос обнаружен! 🎙️]</span>`;
-                } else {
-                    status.innerHTML = `<span style="color:#0284c7;">🎙️ Говорите в микрофон...</span>`;
-                }
+        micAudioStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        voiceAudioChunks = [];
+        let mimeType = '';
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeType = 'audio/webm;codecs=opus';
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+        voiceMediaRecorder = new MediaRecorder(micAudioStream, mimeType ? { mimeType } : undefined);
+        voiceMediaRecorder.ondataavailable = event => { if (event.data && event.data.size) voiceAudioChunks.push(event.data); };
+        voiceMediaRecorder.onstop = () => {
+            const blob = new Blob(voiceAudioChunks, { type: voiceMediaRecorder?.mimeType || 'audio/webm' });
+            if (blob.size) {
+                if (voiceAudioUrl) URL.revokeObjectURL(voiceAudioUrl);
+                voiceAudioUrl = URL.createObjectURL(blob);
+                const audio = document.getElementById('voiceRecordedAudio');
+                if (audio) { audio.src = voiceAudioUrl; document.getElementById('voiceRecordingPlayback').style.display = 'block'; }
             }
-        }, 200);
+            if (status) status.textContent = voiceTranscript ? '✅ Запись завершена. Ниже можно прослушать свой голос.' : '✅ Запись завершена. Компьютер не распознал речь — попробуй ещё раз чуть медленнее.';
+        };
+        voiceMediaRecorder.start();
+        if (btn) { btn.textContent = '⏹ Остановить запись'; btn.style.background = '#b91c1c'; }
+        if (status) status.textContent = '🔴 Запись идёт. Произнеси слово или фразу, затем нажми «Остановить запись».';
 
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (Recognition) {
+            voiceRecognition = new Recognition();
+            voiceRecognition.lang = 'en-GB';
+            voiceRecognition.continuous = true;
+            voiceRecognition.interimResults = true;
+            voiceRecognition.maxAlternatives = 1;
+            voiceRecognition.onresult = event => {
+                let finalText = '', interimText = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    const part = event.results[i][0]?.transcript || '';
+                    if (event.results[i].isFinal) finalText += part + ' ';
+                    else interimText += part;
+                }
+                voiceTranscript = (finalText + interimText).trim();
+                const box = document.getElementById('voiceTranscript');
+                if (box) box.textContent = voiceTranscript || 'Слушаем…';
+                const translation = getVoiceTranslation(voiceTranscript, activeGame.words[activeGame.currentIndex]);
+                const wrap = document.getElementById('voiceTranslationWrap');
+                if (translation && wrap) { wrap.style.display = 'block'; document.getElementById('voiceTranslation').textContent = translation; }
+            };
+            voiceRecognition.onerror = event => {
+                if (status && event.error !== 'no-speech') status.textContent = 'Распознавание: ' + event.error + '. Аудиозапись продолжается.';
+            };
+            voiceRecognition.onend = () => {
+                // Some browsers stop recognition automatically; the audio recorder remains active.
+                if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording' && status) status.textContent = '🎙️ Запись продолжается. Если текст не появился, останови и попробуй ещё раз.';
+            };
+            try { voiceRecognition.start(); } catch (e) { /* MediaRecorder remains available. */ }
+        }
     } catch (err) {
-        alert('Ошибка доступа к микрофону! Убедитесь, что разрешили доступ в настройках браузера.');
+        cleanupVoiceCapture();
+        if (status) status.textContent = 'Не удалось получить доступ к микрофону. Проверь разрешение браузера и подключение по HTTPS.';
+        console.error('Voice recording error:', err);
     }
 }
 
 function recordVoiceStep(passed) {
+    const wasRecording = voiceMediaRecorder && voiceMediaRecorder.state === 'recording';
+    if (wasRecording) {
+        voiceMediaRecorder.onstop = null;
+        try { voiceMediaRecorder.stop(); } catch (e) {}
+    }
+    stopVoiceRecognition();
     if (micAudioStream) { micAudioStream.getTracks().forEach(track => track.stop()); micAudioStream = null; }
-    if (micCheckInterval) clearInterval(micCheckInterval);
-
+    voiceMediaRecorder = null;
     const item = activeGame.words[activeGame.currentIndex];
     if (passed) activeGame.correctWords.push(item);
     else activeGame.errors.push(item);
+    if (voiceAudioUrl) { URL.revokeObjectURL(voiceAudioUrl); voiceAudioUrl = null; }
     activeGame.currentIndex++;
     renderGameStep();
 }

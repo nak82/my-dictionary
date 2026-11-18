@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>British English Vocabulary Lab</title>
 <style>
-:root{--navy:#17324d;--blue:#2864ad;--bg:#f3f6fa;--line:#d8e0ea;--muted:#617187}
+:root{--navy:#1e293b;--blue:#0284c7;--green:#10b981;--bg:#f4f6f9;--line:#d8e0ea;--muted:#617187}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#243247;font:16px/1.5 Arial,sans-serif}
-header{background:var(--navy);color:white;padding:7px max(12px,calc((100% - 1100px)/2));position:sticky;top:0;z-index:80}
+header{background:#fff;color:var(--navy);padding:8px max(12px,calc((100% - 1100px)/2));position:sticky;top:0;z-index:80;border-bottom:1px solid #e2e8f0;box-shadow:0 1px 3px #0f172a0a}
 .header-layout{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .header-brand{flex:0 0 auto;min-width:190px}
-header h1{margin:0;font-size:1.15rem}header p{margin:2px 0 0;color:#dbe6f1;font-size:.74rem}
-nav{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;max-width:1100px;margin:0 auto;padding:5px 10px;background:var(--bg);position:sticky;top:49px;z-index:75;overflow-x:auto;white-space:nowrap;border-bottom:1px solid #dce4ed}
+header h1{margin:0;font-size:1rem;color:#1e293b;font-weight:700}header p{margin:2px 0 0;color:#64748b;font-size:.74rem}
+.header-brand .small{color:#64748b!important}.header-brand a{color:#0284c7!important}
+.header-brand{display:flex;flex-direction:column;gap:2px}
+nav{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;max-width:1100px;margin:0 auto;padding:6px 10px;background:var(--bg);position:sticky;top:54px;z-index:75;overflow-x:auto;white-space:nowrap;border-bottom:1px solid #dce4ed}
 nav button{flex:0 0 auto;padding:6px 8px;font-size:.76rem}
 nav .toolbar-title{font-size:.78rem;font-weight:700;max-width:155px;overflow:hidden;text-overflow:ellipsis}
 nav .toolbar-topic{font-size:.68rem;color:var(--muted);max-width:125px;overflow:hidden;text-overflow:ellipsis}
@@ -22,8 +24,8 @@ nav .color-choice strong{font-size:.72rem}nav .color-choice small{display:none}
 nav .toolbar-toggle{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;font-weight:600;margin:0;color:#34455b;flex:0 0 auto}
 nav .toolbar-toggle input{width:auto;margin:0}
 nav .toolbar-selection{font-size:.68rem;padding:5px 7px;flex:0 0 auto}
-nav button,.btn{border:1px solid #c8d3e0;border-radius:8px;background:#fff;padding:10px 13px;cursor:pointer;font-size:15px;color:#21354c}
-nav button.active,.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+nav button,.btn{border:1px solid #c8d3e0;border-radius:7px;background:#fff;padding:7px 10px;cursor:pointer;font-size:13px;color:#21354c}
+nav button.active,.btn.primary{background:#10b981;border-color:#10b981;color:#fff}
 button:hover{filter:brightness(.97)}button:disabled{opacity:.45;cursor:not-allowed}
 main{max-width:1100px;margin:0 auto;padding:0 14px 30px}.view{display:none}.view.active{display:block}
 .card{background:white;border:1px solid #e1e7ef;border-radius:12px;padding:17px;margin-bottom:14px;box-shadow:0 2px 7px #12243a08}
@@ -230,6 +232,13 @@ body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color
   .lesson-heading-actions { width:100%; align-items:center; justify-content:space-between; }
 }
 
+
+/* Buttons setting: keep words tappable while removing their button-like appearance. */
+body.hide-word-outlines .word{appearance:none;-webkit-appearance:none;border:0!important;border-radius:0!important;padding:0!important;outline:none!important;box-shadow:none!important;text-decoration:inherit}
+body.hide-word-outlines .word:hover,body.hide-word-outlines .word:focus{outline:none!important;box-shadow:none!important}
+.word{touch-action:pan-y;-webkit-tap-highlight-color:rgba(2,132,199,.14)}
+@media(max-width:700px){header{position:relative;padding:8px 10px}.header-layout{align-items:flex-start}.header-brand{min-width:0}header h1{font-size:.95rem}nav{top:0;position:sticky;padding:5px 7px;gap:4px}nav button{padding:6px 8px;font-size:.72rem}main{padding:0 8px 30px}}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -397,6 +406,10 @@ let labDb=null, cloudReady=false, applyingCloudState=false, cloudSaveTimer=null;
   const sentenceCount=document.createElement("span");sentenceCount.className="toolbar-stats";sentenceCount.id="toolbarSentenceCount";nav.appendChild(sentenceCount);
   const finish=document.getElementById("finishBulk");finish.textContent="✓ Finish selection";finish.classList.add("toolbar-selection");finish.title="Finish colour selection";nav.insertBefore(finish,document.getElementById("wordStats"));
   document.getElementById("hideColoursToggle").addEventListener("change",e=>document.body.classList.toggle("hide-word-colours",e.target.checked));
+  const buttonsToggle=document.getElementById("hideButtonsToggle");
+  const applyButtonsVisibility=hidden=>{document.body.classList.toggle("hide-word-outlines",!!hidden);buttonsToggle.checked=!!hidden;try{saveLabSetting("bevl_hide_buttons",hidden?"1":"0")}catch(e){}};
+  buttonsToggle.addEventListener("change",e=>applyButtonsVisibility(e.target.checked));
+  applyButtonsVisibility(localStorage.getItem(scopedKey("bevl_hide_buttons"))==="1");
   document.getElementById("clearBulk").remove();
   dock.querySelector("#dockWordDetails").replaceWith(document.getElementById("wordDetails"));
   document.querySelector(".header-layout").appendChild(document.getElementById("playerCard"));
@@ -432,7 +445,7 @@ if(!state.phrases)state.phrases={};
 let currentLessonId = null, currentSentence = 0, isPlaying = false, isPaused = false, activeWord = null, activeContext = "";
 let utteranceRun = 0, voices = [], bulkRating = null, bulkMode = false, ratePhrasesInBulk = true;
 let selectedBulkWords = new Set(), translationCache = new Map(), selectedDictionaryWords = new Set();
-let dragStartWord=null,dragSelecting=false,dragWords=[],suppressNextWordClick=false;
+let dragStartWord=null,dragSelecting=false,touchSelecting=false,dragWords=[],suppressNextWordClick=false;
 
 function uid(){return "l_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8)}
 function loadState(){
@@ -629,6 +642,8 @@ function renderReading(){
           word.addEventListener("click",()=>onWordClick(clean,sentence,word));
           word.addEventListener("mousedown",()=>{if(!bulkMode){dragStartWord=word;dragSelecting=true;dragWords=[word];}});
           word.addEventListener("mouseenter",()=>{if(dragSelecting&&!bulkMode&&dragStartWord){const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(word);if(a>=0&&b>=0){dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);all.forEach(x=>x.classList.toggle("selected-mass",dragWords.includes(x)));}}});
+          word.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"&&!bulkMode){touchSelecting=true;dragStartWord=word;dragWords=[word];word.setPointerCapture?.(e.pointerId);}});
+          word.addEventListener("pointerenter",()=>{if(touchSelecting&&!bulkMode&&dragStartWord){const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(word);if(a>=0&&b>=0){dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);all.forEach(x=>x.classList.toggle("selected-mass",dragWords.includes(x)));}}});
         }
         span.appendChild(word);
       });
@@ -646,6 +661,7 @@ document.addEventListener("mouseup",()=>{
   const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;
   activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);
 });
+document.addEventListener("pointerup",e=>{if(e.pointerType==="mouse"||!touchSelecting)return;touchSelecting=false;dragSelecting=false;const chosen=dragWords.slice();dragStartWord=null;dragWords=[];if(bulkMode||chosen.length<2){document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"));return;}const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);});
 function onWordClick(word,sentence,element){
   if(suppressNextWordClick){suppressNextWordClick=false;return;}
   const key=wordKey(word),phraseInfo=findPhrasalVerb(word,sentence),phraseKey=phraseInfo?wordKey(phraseInfo.phrase):null;
@@ -1005,6 +1021,7 @@ if(settingsRef()) settingsRef().once("value").then(snap=>{
     applyDictionaryFont(n);
   }
   if(v.bevl_speed){localStorage.setItem(scopedKey("bevl_speed"),v.bevl_speed);document.getElementById("speed").value=v.bevl_speed;document.getElementById("speedLabel").textContent=Number(v.bevl_speed).toFixed(1)+"×";}
+  if(v.bevl_hide_buttons!==undefined){localStorage.setItem(scopedKey("bevl_hide_buttons"),String(v.bevl_hide_buttons));const toggle=document.getElementById("hideButtonsToggle");if(toggle){toggle.checked=String(v.bevl_hide_buttons)==="1"||v.bevl_hide_buttons===true;document.body.classList.toggle("hide-word-outlines",toggle.checked);}}
   if(v.bevl_custom_palette){
     localStorage.setItem(scopedKey("bevl_custom_palette"),v.bevl_custom_palette);
     try{const palette=JSON.parse(v.bevl_custom_palette);Object.keys(DEFAULT_PALETTE).forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(palette[k]||""))customPalette[k]=palette[k]});applyPalette();renderColorPanel();renderWordStats();}catch(e){}
