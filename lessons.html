@@ -52,7 +52,7 @@ textarea{min-height:155px;resize:vertical}
 .reading-text{font-size:1.18rem;line-height:1.32;overflow-wrap:anywhere}
 .reading-paragraph{display:block;text-indent:1.5em;margin:0}
 .reading-paragraph:first-child{margin-top:0}
-.word{border-radius:4px;padding:1px 0;cursor:pointer;white-space:pre-wrap}
+.word{border-radius:4px;padding:1px 0;cursor:pointer;white-space:pre-wrap;touch-action:none}
 .word:hover{outline:1px solid #5c85bb}
 body.hide-word-colours .word.c0,body.hide-word-colours .word.c1,body.hide-word-colours .word.c2,body.hide-word-colours .word.c3,body.hide-word-colours .word.c4,body.hide-word-colours .word.c5{background:transparent!important;color:inherit!important}
 body.hide-word-outlines .word{border:0!important;border-radius:0!important;padding:0!important;outline:none!important;box-shadow:none!important}
@@ -642,9 +642,16 @@ function renderReading(){
           word.addEventListener("click",()=>onWordClick(clean,sentence,word));
           word.addEventListener("mousedown",()=>{if(!bulkMode){dragStartWord=word;dragSelecting=true;dragWords=[word];}});
           word.addEventListener("mouseenter",()=>{if(dragSelecting&&!bulkMode&&dragStartWord){const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(word);if(a>=0&&b>=0){dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);all.forEach(x=>x.classList.toggle("selected-mass",dragWords.includes(x)));}}});
-          word.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"&&!bulkMode){touchSelecting=true;dragStartWord=word;dragWords=[word];word.setPointerCapture?.(e.pointerId);}});
-          word.addEventListener("pointerenter",()=>{if(touchSelecting&&!bulkMode&&dragStartWord){const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(word);if(a>=0&&b>=0){dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);all.forEach(x=>x.classList.toggle("selected-mass",dragWords.includes(x)));}}});
-        }
+          word.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="mouse"&&!bulkMode){
+    e.preventDefault();
+    touchSelecting=true;
+    dragStartWord=word;
+    dragWords=[word];
+    word.setPointerCapture?.(e.pointerId);
+  }
+});
+}
         span.appendChild(word);
       });
       annotatePhrasalVerbs(span,sentence);
@@ -661,7 +668,70 @@ document.addEventListener("mouseup",()=>{
   const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;
   activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);
 });
-document.addEventListener("pointerup",e=>{if(e.pointerType==="mouse"||!touchSelecting)return;touchSelecting=false;dragSelecting=false;const chosen=dragWords.slice();dragStartWord=null;dragWords=[];if(bulkMode||chosen.length<2){document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"));return;}const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);});
+function updateTouchWordSelection(x,y){
+  if(!touchSelecting||bulkMode||!dragStartWord)return;
+
+  const hit=document.elementFromPoint(x,y)?.closest?.("#readingText .word[data-word]");
+  if(!hit)return;
+
+  const all=[...document.querySelectorAll("#readingText .word[data-word]")];
+  const a=all.indexOf(dragStartWord);
+  const b=all.indexOf(hit);
+
+  if(a<0||b<0)return;
+
+  dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);
+  all.forEach(el=>el.classList.toggle("selected-mass",dragWords.includes(el)));
+}
+
+document.addEventListener("pointermove",e=>{
+  if(touchSelecting&&e.pointerType!=="mouse"){
+    e.preventDefault();
+    updateTouchWordSelection(e.clientX,e.clientY);
+  }
+},{passive:false});
+
+function finishTouchWordSelection(){
+  if(!touchSelecting)return;
+
+  touchSelecting=false;
+  dragSelecting=false;
+
+  const chosen=dragWords.slice();
+  dragStartWord=null;
+  dragWords=[];
+
+  if(bulkMode||chosen.length<2){
+    document.querySelectorAll("#readingText .word.selected-mass")
+      .forEach(el=>el.classList.remove("selected-mass"));
+    return;
+  }
+
+  const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");
+  const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;
+
+  activeWord=phrase;
+  activeContext=sentence;
+  suppressNextWordClick=true;
+  showWordDetails(phrase,sentence);
+}
+
+document.addEventListener("pointerup",e=>{
+  if(e.pointerType!=="mouse"&&touchSelecting){
+    updateTouchWordSelection(e.clientX,e.clientY);
+    finishTouchWordSelection();
+  }
+});
+
+document.addEventListener("pointercancel",()=>{
+  if(touchSelecting){
+    touchSelecting=false;
+    dragStartWord=null;
+    dragWords=[];
+    document.querySelectorAll("#readingText .word.selected-mass")
+      .forEach(el=>el.classList.remove("selected-mass"));
+  }
+});
 function onWordClick(word,sentence,element){
   if(suppressNextWordClick){suppressNextWordClick=false;return;}
   const key=wordKey(word),phraseInfo=findPhrasalVerb(word,sentence),phraseKey=phraseInfo?wordKey(phraseInfo.phrase):null;
