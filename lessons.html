@@ -52,7 +52,7 @@ textarea{min-height:155px;resize:vertical}
 .reading-text{font-size:1.18rem;line-height:1.32;overflow-wrap:anywhere}
 .reading-paragraph{display:block;text-indent:1.5em;margin:0}
 .reading-paragraph:first-child{margin-top:0}
-.word{border-radius:4px;padding:1px 0;cursor:pointer;white-space:pre-wrap;touch-action:none}
+.word{border-radius:4px;padding:1px 0;cursor:pointer;white-space:pre-wrap}
 .word:hover{outline:1px solid #5c85bb}
 body.hide-word-colours .word.c0,body.hide-word-colours .word.c1,body.hide-word-colours .word.c2,body.hide-word-colours .word.c3,body.hide-word-colours .word.c4,body.hide-word-colours .word.c5{background:transparent!important;color:inherit!important}
 body.hide-word-outlines .word{border:0!important;border-radius:0!important;padding:0!important;outline:none!important;box-shadow:none!important}
@@ -236,7 +236,7 @@ body.hide-word-colours .dictionary-rating-colour{background:#fff!important;color
 /* Buttons setting: keep words tappable while removing their button-like appearance. */
 body.hide-word-outlines .word{appearance:none;-webkit-appearance:none;border:0!important;border-radius:0!important;padding:0!important;outline:none!important;box-shadow:none!important;text-decoration:inherit}
 body.hide-word-outlines .word:hover,body.hide-word-outlines .word:focus{outline:none!important;box-shadow:none!important}
-.word{touch-action:pan-y;-webkit-tap-highlight-color:rgba(2,132,199,.14)}
+.word{touch-action:pan-y;-webkit-tap-highlight-color:rgba(2,132,199,.14);-webkit-user-select:none;user-select:none}
 @media(max-width:700px){header{position:relative;padding:8px 10px}.header-layout{align-items:flex-start}.header-brand{min-width:0}header h1{font-size:.95rem}nav{top:0;position:sticky;padding:5px 7px;gap:4px}nav button{padding:6px 8px;font-size:.72rem}main{padding:0 8px 30px}}
 
 </style>
@@ -445,7 +445,7 @@ if(!state.phrases)state.phrases={};
 let currentLessonId = null, currentSentence = 0, isPlaying = false, isPaused = false, activeWord = null, activeContext = "";
 let utteranceRun = 0, voices = [], bulkRating = null, bulkMode = false, ratePhrasesInBulk = true;
 let selectedBulkWords = new Set(), translationCache = new Map(), selectedDictionaryWords = new Set();
-let dragStartWord=null,dragSelecting=false,touchSelecting=false,dragWords=[],suppressNextWordClick=false;
+let dragStartWord=null,dragSelecting=false,touchSelecting=false,touchMoved=false,touchStartX=0,touchStartY=0,dragWords=[],suppressNextWordClick=false;
 
 function uid(){return "l_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8)}
 function loadState(){
@@ -642,7 +642,6 @@ function renderReading(){
           word.addEventListener("click",()=>onWordClick(clean,sentence,word));
           word.addEventListener("mousedown",()=>{if(!bulkMode){dragStartWord=word;dragSelecting=true;dragWords=[word];}});
           word.addEventListener("mouseenter",()=>{if(dragSelecting&&!bulkMode&&dragStartWord){const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(word);if(a>=0&&b>=0){dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);all.forEach(x=>x.classList.toggle("selected-mass",dragWords.includes(x)));}}});
-          word.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"&&!bulkMode){e.preventDefault();touchSelecting=true;dragStartWord=word;dragWords=[word];word.setPointerCapture?.(e.pointerId);}});
         }
         span.appendChild(word);
       });
@@ -660,27 +659,61 @@ document.addEventListener("mouseup",()=>{
   const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;
   activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);
 });
+// Touch selection is handled with native touch events rather than Pointer Events.
+// On mobile browsers pointer capture / pointercancel can interrupt a drag when
+// the page also supports vertical scrolling.
 function updateTouchWordSelection(x,y){
   if(!touchSelecting||bulkMode||!dragStartWord)return;
   const hit=document.elementFromPoint(x,y)?.closest?.("#readingText .word[data-word]");
   if(!hit)return;
-  const all=[...document.querySelectorAll("#readingText .word[data-word]")],a=all.indexOf(dragStartWord),b=all.indexOf(hit);
+  const all=[...document.querySelectorAll("#readingText .word[data-word]")];
+  const a=all.indexOf(dragStartWord),b=all.indexOf(hit);
   if(a<0||b<0)return;
   dragWords=all.slice(Math.min(a,b),Math.max(a,b)+1);
   all.forEach(el=>el.classList.toggle("selected-mass",dragWords.includes(el)));
 }
-document.addEventListener("pointermove",e=>{if(touchSelecting&&e.pointerType!=="mouse"){e.preventDefault();updateTouchWordSelection(e.clientX,e.clientY)}},{passive:false});
+document.addEventListener("touchstart",e=>{
+  if(bulkMode||e.touches.length!==1)return;
+  const word=e.target.closest?.("#readingText .word[data-word]");
+  if(!word)return;
+  const t=e.touches[0];
+  touchSelecting=true;touchMoved=false;touchStartX=t.clientX;touchStartY=t.clientY;
+  dragStartWord=word;dragWords=[word];
+},{passive:true});
+document.addEventListener("touchmove",e=>{
+  if(!touchSelecting||e.touches.length!==1)return;
+  const t=e.touches[0];
+  const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;
+  if(!touchMoved&&Math.hypot(dx,dy)<7)return;
+  touchMoved=true;
+  // Once the finger has moved, prevent the browser from scrolling/selecting text
+  // so the gesture can be used to select several vocabulary words.
+  e.preventDefault();
+  updateTouchWordSelection(t.clientX,t.clientY);
+},{passive:false});
 function finishTouchWordSelection(){
   if(!touchSelecting)return;
-  touchSelecting=false;dragSelecting=false;
-  const chosen=dragWords.slice();dragStartWord=null;dragWords=[];
-  if(bulkMode||chosen.length<2){document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"));return;}
+  const moved=touchMoved,chosen=dragWords.slice();
+  touchSelecting=false;touchMoved=false;dragStartWord=null;dragWords=[];
+  if(!moved||bulkMode||chosen.length<2){
+    document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"));
+    return;
+  }
   const phrase=chosen.map(el=>el.dataset.word).filter(Boolean).join(" ");
   const sentence=chosen[0].closest("[data-sentence]")?.dataset.sentenceText||phrase;
-  activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;showWordDetails(phrase,sentence);
+  activeWord=phrase;activeContext=sentence;suppressNextWordClick=true;
+  showWordDetails(phrase,sentence);
 }
-document.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse"&&touchSelecting){updateTouchWordSelection(e.clientX,e.clientY);finishTouchWordSelection()}});
-document.addEventListener("pointercancel",()=>{if(touchSelecting){touchSelecting=false;dragStartWord=null;dragWords=[];document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"))}});
+document.addEventListener("touchend",e=>{
+  if(!touchSelecting)return;
+  const t=e.changedTouches[0];
+  if(t&&touchMoved)updateTouchWordSelection(t.clientX,t.clientY);
+  finishTouchWordSelection();
+},{passive:true});
+document.addEventListener("touchcancel",()=>{
+  touchSelecting=false;touchMoved=false;dragStartWord=null;dragWords=[];
+  document.querySelectorAll("#readingText .word.selected-mass").forEach(el=>el.classList.remove("selected-mass"));
+},{passive:true});
 function onWordClick(word,sentence,element){
   if(suppressNextWordClick){suppressNextWordClick=false;return;}
   const key=wordKey(word),phraseInfo=findPhrasalVerb(word,sentence),phraseKey=phraseInfo?wordKey(phraseInfo.phrase):null;
