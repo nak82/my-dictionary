@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Урок английского — YouTube тренажёр (Этап 1)</title>
+  <title>Урок английского — YouTube тренажёр (Вер. 0.2)</title>
   <style>
     :root {
       --bg: #0f1115;
@@ -108,14 +108,48 @@
       border-radius: 8px;
     }
 
-    .status {
+    .sub-bar {
       margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       font-size: 13px;
       color: var(--muted);
     }
 
+    .version-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
     .status.warn {
       color: var(--warn);
+    }
+
+    .status.ok {
+      color: var(--success);
+    }
+
+    .api-config {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .api-config input {
+      font-size: 12px;
+      padding: 7px 10px;
+      min-width: 260px;
     }
 
     .player-box {
@@ -283,23 +317,77 @@
       font-size: 12px;
       margin-top: 2px;
     }
+
+    .hotkeys-footer {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .hk-block {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .hk-block h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .hk-block ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hk-block li {
+      margin-bottom: 4px;
+    }
+
+    kbd {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-size: 12px;
+      color: var(--text);
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <!-- 1. Ввод ссылки -->
+    <!-- 1. Ввод ссылки и номер версии -->
     <div class="card">
-      <h1>Английский видео-тренажёр (прототип плеера)</h1>
+      <h1>Английский видео-тренажёр</h1>
       <div class="url-row">
         <input
           id="urlInput"
           type="text"
-          placeholder="Вставьте ссылку на YouTube (например, https://youtu.be/dQw4w9WgXcQ)"
+          placeholder="Вставьте ссылку на YouTube (например, https://youtu.be/... или https://www.youtube.com/watch?v=...)"
         />
         <button id="startBtn" type="button">Загрузить видео</button>
       </div>
-      <div id="statusMsg" class="status">
-        Вставьте ссылку и нажмите «Загрузить видео». Сейчас используется встроенный демо-набор предложений для проверки логики.
+
+      <div class="sub-bar">
+        <span class="version-badge" id="versionBadge">Вер. 0.2</span>
+        <span id="statusMsg" class="status">
+          Вставьте ссылку на видео — сайт сам подготовит предложения и перевод (если внешний сервис не задан, используется авто-демо).
+        </span>
+      </div>
+
+      <div class="api-config">
+        <span style="font-size: 12px; color: var(--muted);">Сервис субтитров/перевода (опционально):</span>
+        <input
+          id="subApiInput"
+          type="text"
+          placeholder="Например: https://ваш-сервис.workers.dev/subs?v="
+        />
+        <button id="saveApiBtn" class="secondary small" type="button">Сохранить URL</button>
       </div>
     </div>
 
@@ -385,10 +473,41 @@
       <div class="ab-title" style="margin-bottom: 10px;">Все предложения урока (нажмите, чтобы перейти)</div>
       <div id="transcriptList" class="transcript-list"></div>
     </div>
+
+    <!-- 6. Напоминалка горячих клавиш по блокам -->
+    <div class="card">
+      <div class="ab-title" style="margin-bottom: 10px;">Горячие клавиши (напоминалка по блокам)</div>
+      <div class="hotkeys-footer">
+        <div class="hk-block">
+          <h3>Блок «Загрузка видео»</h3>
+          <ul>
+            <li><kbd>Enter</kbd> в поле ссылки — загрузить видео</li>
+          </ul>
+        </div>
+        <div class="hk-block">
+          <h3>Блок «Предложения и субтитры»</h3>
+          <ul>
+            <li><kbd>Space</kbd> — пауза / воспроизведение</li>
+            <li><kbd>←</kbd> / <kbd>→</kbd> — предыдущее / следующее предложение</li>
+            <li><kbd>R</kbd> — повторить текущее предложение сначала</li>
+          </ul>
+        </div>
+        <div class="hk-block">
+          <h3>Блок «Точные засечки A–B»</h3>
+          <ul>
+            <li><kbd>A</kbd> — задать начало A с текущего времени</li>
+            <li><kbd>B</kbd> — задать конец B с текущего времени</li>
+            <li><kbd>G</kbd> — прослушать фрагмент A–B</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Демо-предложения (на следующих этапах будут подтягиваться автоматически по ссылке)
+    const VERSION = "Вер. 0.2";
+    const API_STORAGE_KEY = "yt_lesson_sub_api_url";
+
     const DEMO_SENTENCES = [
       {
         start: 0.0,
@@ -410,12 +529,86 @@
       }
     ];
 
+    // Склейка коротких кусков субтитров в целые предложения
+    function buildSentencesFromCues(cues) {
+      if (!Array.isArray(cues) || cues.length === 0) return [];
+      const result = [];
+      let bufEn = [];
+      let bufRu = [];
+      let bufStart = null;
+      let bufEnd = null;
+
+      function flush() {
+        const enText = bufEn.join(" ").replace(/\s+/g, " ").trim();
+        const ruText = bufRu.join(" ").replace(/\s+/g, " ").trim();
+        if (enText && bufStart !== null && bufEnd !== null) {
+          result.push({
+            start: Number(bufStart.toFixed(2)),
+            end: Number(Math.max(bufEnd, bufStart + 0.5).toFixed(2)),
+            en: enText,
+            ru: ruText
+          });
+        }
+        bufEn = [];
+        bufRu = [];
+        bufStart = null;
+        bufEnd = null;
+      }
+
+      for (let i = 0; i < cues.length; i++) {
+        const c = cues[i];
+        const start = Number(c.start || 0);
+        const end = typeof c.end === "number" ? c.end : start + Number(c.duration || 2.5);
+        const en = (c.en || c.text || "").trim();
+        const ru = (c.ru || "").trim();
+        if (!en) continue;
+
+        if (bufStart === null) bufStart = start;
+        const gapTooBig = bufEnd !== null && (start - bufEnd) > 2.2;
+        if (gapTooBig && bufEn.length > 0) {
+          flush();
+          bufStart = start;
+        }
+
+        bufEn.push(en);
+        if (ru) bufRu.push(ru);
+        bufEnd = end;
+
+        if (/[.!?]["')\]]*$/.test(en)) {
+          flush();
+        }
+      }
+      if (bufEn.length > 0) flush();
+      return result;
+    }
+
+    async function fetchLessonSentences(videoId) {
+      const apiBase = (subApiInput.value || "").trim();
+      if (apiBase) {
+        const sep = apiBase.includes("?") || apiBase.endsWith("=") ? "" : "?v=";
+        const endpoint = `${apiBase}${sep}${encodeURIComponent(videoId)}`;
+        const resp = await fetch(endpoint);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        if (Array.isArray(data.sentences) && data.sentences.length > 0) {
+          return { sentences: data.sentences, source: "внешний сервис" };
+        }
+        if (Array.isArray(data.cues) && data.cues.length > 0) {
+          const built = buildSentencesFromCues(data.cues);
+          if (built.length > 0) return { sentences: built, source: "внешний сервис (склейка по предложениям)" };
+        }
+        throw new Error("Пустой ответ от сервиса субтитров");
+      }
+
+      // Резервный авто-режим без ручного ввода пользователя
+      return { sentences: [...DEMO_SENTENCES], source: "авто-демо (сервис субтитров не задан)" };
+    }
+
     let sentences = [...DEMO_SENTENCES];
     let activeSentenceIndex = -1;
     let handledEndForIndex = -1;
-
-    // Режим воспроизведения точной засечки A-B
-    let segmentMode = false; // true = играет отрезок A-B
+    let segmentMode = false;
     let ytPlayer = null;
     let apiReady = false;
     let pendingVideoId = null;
@@ -424,6 +617,8 @@
     const urlInput = document.getElementById("urlInput");
     const startBtn = document.getElementById("startBtn");
     const statusMsg = document.getElementById("statusMsg");
+    const subApiInput = document.getElementById("subApiInput");
+    const saveApiBtn = document.getElementById("saveApiBtn");
     const subEn = document.getElementById("subEn");
     const subRu = document.getElementById("subRu");
     const sentenceCounter = document.getElementById("sentenceCounter");
@@ -433,9 +628,15 @@
     const pauseAtEndEl = document.getElementById("pauseAtEnd");
     const repeatSentenceEl = document.getElementById("repeatSentence");
     const loopSegEl = document.getElementById("loopSeg");
-
     const segStartInput = document.getElementById("segStart");
     const segEndInput = document.getElementById("segEnd");
+
+    subApiInput.value = localStorage.getItem(API_STORAGE_KEY) || "";
+    saveApiBtn.addEventListener("click", () => {
+      localStorage.setItem(API_STORAGE_KEY, subApiInput.value.trim());
+      statusMsg.className = "status ok";
+      statusMsg.textContent = "URL сервиса субтитров сохранён в браузере.";
+    });
 
     function extractYouTubeId(raw) {
       const s = (raw || "").trim();
@@ -488,7 +689,6 @@
       subRu.textContent = item.ru;
       sentenceCounter.textContent = `Предложение: ${idx + 1} / ${sentences.length}`;
 
-      // Подставляем границы текущего предложения в засечки A-B как стартовую точку
       segStartInput.value = item.start.toFixed(1);
       segEndInput.value = Math.min(item.end, item.start + 1.5).toFixed(1);
 
@@ -503,13 +703,24 @@
       }
     }
 
-    function loadVideo(videoId) {
+    async function loadVideo(videoId) {
       statusMsg.className = "status";
-      statusMsg.textContent = `Загружается видео ID: ${videoId}…`;
-      sentences = [...DEMO_SENTENCES];
+      statusMsg.textContent = `Загружается видео (${videoId}) и подготавливаются субтитры…`;
       activeSentenceIndex = -1;
       handledEndForIndex = -1;
       segmentMode = false;
+
+      try {
+        const res = await fetchLessonSentences(videoId);
+        sentences = res.sentences;
+        statusMsg.className = "status ok";
+        statusMsg.textContent = `Видео загружено (${videoId}). Источник субтитров: ${res.source}. Предложений: ${sentences.length}.`;
+      } catch (err) {
+        sentences = [...DEMO_SENTENCES];
+        statusMsg.className = "status warn";
+        statusMsg.textContent = `Сервис субтитров не ответил (${err.message}). Включён резервный авто-демо набор.`;
+      }
+
       renderTranscriptList();
 
       if (!apiReady) {
@@ -550,7 +761,6 @@
 
         timeReadout.textContent = `Время: ${t.toFixed(1)}s`;
 
-        // 1. Обработка точной засечки A-B
         const startA = parseFloat(segStartInput.value) || 0;
         const endB = parseFloat(segEndInput.value) || 0;
         if (segmentMode && endB > startA && t >= endB) {
@@ -564,7 +774,6 @@
           return;
         }
 
-        // 2. Определение активного предложения
         const foundIdx = sentences.findIndex((s) => t >= s.start && t < s.end);
         if (foundIdx !== -1 && foundIdx !== activeSentenceIndex) {
           activeSentenceIndex = foundIdx;
@@ -576,7 +785,6 @@
           renderTranscriptList();
         }
 
-        // 3. Поведение в конце активного предложения
         if (activeSentenceIndex !== -1 && !segmentMode) {
           const cur = sentences[activeSentenceIndex];
           if (t >= cur.end - 0.08 && handledEndForIndex !== activeSentenceIndex) {
@@ -594,7 +802,6 @@
       }, 80);
     }
 
-    // Загрузка YouTube IFrame API
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
@@ -607,7 +814,6 @@
       }
     };
 
-    // События интерфейса
     startBtn.addEventListener("click", () => {
       const id = extractYouTubeId(urlInput.value);
       if (!id) {
@@ -622,25 +828,28 @@
       if (e.key === "Enter") startBtn.click();
     });
 
-    prevSentenceBtn.addEventListener("click", () => {
+    function goPrevSentence() {
       segmentMode = false;
       const target = activeSentenceIndex > 0 ? activeSentenceIndex - 1 : 0;
       selectSentence(target, true);
-    });
+    }
 
-    nextSentenceBtn.addEventListener("click", () => {
+    function goNextSentence() {
       segmentMode = false;
       const target = activeSentenceIndex < sentences.length - 1 ? activeSentenceIndex + 1 : sentences.length - 1;
       selectSentence(target, true);
-    });
+    }
 
-    repeatNowBtn.addEventListener("click", () => {
+    function repeatCurrentSentence() {
       segmentMode = false;
       const target = activeSentenceIndex >= 0 ? activeSentenceIndex : 0;
       selectSentence(target, true);
-    });
+    }
 
-    // Корректировка засечек A и B на +-0.1s
+    document.getElementById("prevSentenceBtn").addEventListener("click", goPrevSentence);
+    document.getElementById("nextSentenceBtn").addEventListener("click", goNextSentence);
+    document.getElementById("repeatNowBtn").addEventListener("click", repeatCurrentSentence);
+
     function adjustInput(el, delta) {
       const val = Math.max(0, (parseFloat(el.value) || 0) + delta);
       el.value = val.toFixed(1);
@@ -651,19 +860,19 @@
     document.getElementById("endMinus").addEventListener("click", () => adjustInput(segEndInput, -0.1));
     document.getElementById("endPlus").addEventListener("click", () => adjustInput(segEndInput, 0.1));
 
-    document.getElementById("setStartFromNow").addEventListener("click", () => {
+    function setStartFromNow() {
       if (ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
         segStartInput.value = Math.max(0, ytPlayer.getCurrentTime()).toFixed(1);
       }
-    });
+    }
 
-    document.getElementById("setEndFromNow").addEventListener("click", () => {
+    function setEndFromNow() {
       if (ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
         segEndInput.value = Math.max(0, ytPlayer.getCurrentTime()).toFixed(1);
       }
-    });
+    }
 
-    document.getElementById("playSegBtn").addEventListener("click", () => {
+    function playSegmentAB() {
       const a = parseFloat(segStartInput.value) || 0;
       const b = parseFloat(segEndInput.value) || 0;
       if (b <= a) {
@@ -671,12 +880,17 @@
         statusMsg.textContent = "Конец (B) должен быть больше начала (A).";
         return;
       }
+      if (!ytPlayer || typeof ytPlayer.seekTo !== "function") return;
       statusMsg.className = "status";
       statusMsg.textContent = `Воспроизводится фрагмент A–B: ${a.toFixed(1)}s – ${b.toFixed(1)}s`;
       segmentMode = true;
       ytPlayer.seekTo(a, true);
       ytPlayer.playVideo();
-    });
+    }
+
+    document.getElementById("setStartFromNow").addEventListener("click", setStartFromNow);
+    document.getElementById("setEndFromNow").addEventListener("click", setEndFromNow);
+    document.getElementById("playSegBtn").addEventListener("click", playSegmentAB);
 
     document.getElementById("stopSegBtn").addEventListener("click", () => {
       segmentMode = false;
@@ -685,12 +899,39 @@
       }
     });
 
-    // Взаимоисключение галочек «Пауза» и «Повторять» (если нужно, можно легко сделать оба гибкими)
     pauseAtEndEl.addEventListener("change", () => {
       if (pauseAtEndEl.checked) repeatSentenceEl.checked = false;
     });
     repeatSentenceEl.addEventListener("change", () => {
       if (repeatSentenceEl.checked) pauseAtEndEl.checked = false;
+    });
+
+    // Горячие клавиши (игнорируем, если пользователь печатает в input/textarea)
+    document.addEventListener("keydown", (e) => {
+      const tagName = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+      if (tagName === "input" || tagName === "textarea") return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!ytPlayer || typeof ytPlayer.getPlayerState !== "function") return;
+        const state = ytPlayer.getPlayerState();
+        if (state === 1) ytPlayer.pauseVideo();
+        else ytPlayer.playVideo();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrevSentence();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNextSentence();
+      } else if (e.key.toLowerCase() === "r") {
+        repeatCurrentSentence();
+      } else if (e.key.toLowerCase() === "a") {
+        setStartFromNow();
+      } else if (e.key.toLowerCase() === "b") {
+        setEndFromNow();
+      } else if (e.key.toLowerCase() === "g") {
+        playSegmentAB();
+      }
     });
 
     renderTranscriptList();
