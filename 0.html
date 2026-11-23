@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Урок английского — YouTube тренажёр (Вер. 0.3)</title>
+  <title>Урок английского — YouTube тренажёр (Вер. 0.4)</title>
   <style>
     :root {
       --bg: #0f1115;
@@ -16,6 +16,9 @@
       --border: #2a303d;
       --success: #22c55e;
       --warn: #f59e0b;
+      --unknown: #ef4444;
+      --learning: #f59e0b;
+      --known: #22c55e;
     }
 
     * {
@@ -58,7 +61,8 @@
     }
 
     input[type="text"],
-    input[type="number"] {
+    input[type="number"],
+    textarea {
       background: var(--panel-2);
       color: var(--text);
       border: 1px solid var(--border);
@@ -66,13 +70,21 @@
       padding: 10px 12px;
       font-size: 14px;
       outline: none;
+      font-family: inherit;
     }
 
     input[type="text"] {
       flex: 1;
     }
 
-    input:focus {
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
       border-color: var(--accent);
     }
 
@@ -149,7 +161,7 @@
     .api-config input {
       font-size: 12px;
       padding: 7px 10px;
-      min-width: 280px;
+      min-width: 260px;
     }
 
     .player-box {
@@ -188,8 +200,86 @@
       font-size: 22px;
       font-weight: 600;
       color: #fff;
-      min-height: 34px;
+      min-height: 38px;
+      line-height: 1.6;
     }
+
+    .word-btn {
+      display: inline;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      padding: 2px 4px;
+      margin: 0 1px;
+      border-radius: 6px;
+      border-bottom: 2px solid transparent;
+    }
+
+    .word-btn:hover {
+      background: rgba(59, 130, 246, 0.22);
+    }
+
+    .word-btn.lvl-unknown {
+      border-bottom-color: var(--unknown);
+      background: rgba(239, 68, 68, 0.14);
+    }
+
+    .word-btn.lvl-learning {
+      border-bottom-color: var(--learning);
+      background: rgba(245, 158, 11, 0.14);
+    }
+
+    .word-btn.lvl-known {
+      border-bottom-color: var(--known);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .word-card {
+      background: var(--panel-2);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .word-card.visible {
+      display: flex;
+    }
+
+    .word-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .word-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .word-tr {
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+
+    .rate-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rate-unknown { background: #dc2626; }
+    .rate-unknown:hover { background: #b91c1c; }
+    .rate-learning { background: #d97706; }
+    .rate-learning:hover { background: #b45309; }
+    .rate-known { background: #16a34a; }
+    .rate-known:hover { background: #15803d; }
 
     .sub-ru {
       font-size: 16px;
@@ -373,7 +463,7 @@
       </div>
 
       <div class="sub-bar">
-        <span class="version-badge" id="versionBadge">Вер. 0.3</span>
+        <span class="version-badge" id="versionBadge">Вер. 0.4</span>
         <span id="statusMsg" class="status">
           Вставьте ссылку на видео и нажмите «Загрузить видео».
         </span>
@@ -384,10 +474,9 @@
         <input
           id="subApiInput"
           type="text"
-          placeholder="https://ваш-воркер.workers.dev"
+          placeholder="https://silent-dew-820c.nak82.workers.dev"
         />
         <button id="saveApiBtn" class="secondary small" type="button">Сохранить URL</button>
-        <button id="testApiBtn" class="secondary small" type="button">Проверить связь</button>
       </div>
     </div>
 
@@ -404,6 +493,21 @@
       </div>
       <div id="subEn" class="sub-en">Ожидание запуска видео…</div>
       <div id="subRu" class="sub-ru"></div>
+
+      <div id="wordCard" class="word-card">
+        <div class="word-card-top">
+          <div>
+            <span id="wordCardEn" class="word-title"></span>
+            <span id="wordCardRu" class="word-tr"></span>
+          </div>
+          <button id="closeWordCard" class="secondary small" type="button">Закрыть</button>
+        </div>
+        <div class="rate-btns">
+          <button id="rateUnknown" class="small rate-unknown" type="button">Не знаю</button>
+          <button id="rateLearning" class="small rate-learning" type="button">Учу</button>
+          <button id="rateKnown" class="small rate-known" type="button">Знаю</button>
+        </div>
+      </div>
 
       <hr style="border: 0; border-top: 1px solid var(--border); width: 100%; margin: 4px 0;" />
 
@@ -465,6 +569,19 @@
       </div>
     </div>
 
+    <!-- Запасной быстрый авто-генератор предложений из скопированного текста (если Worker не смог скачать титры) -->
+    <div class="card">
+      <div class="ab-title" style="margin-bottom: 6px;">Быстрый разбор текста в предложения + автоперевод (запасной режим)</div>
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">
+        Если YouTube заблокировал скачивание титров на сервере, вставьте сюда скопированный английский текст/транскрипт — сайт сам разобьёт его на предложения, расставит примерные тайминги и переведёт на русский.
+      </div>
+      <textarea id="rawTextInput" placeholder="Вставьте английский текст сюда..."></textarea>
+      <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button id="buildFromTextBtn" type="button">Собрать предложения и перевести</button>
+        <span id="textBuildStatus" style="font-size: 12px; color: var(--muted);"></span>
+      </div>
+    </div>
+
     <div class="card">
       <div class="ab-title" style="margin-bottom: 10px;">Все предложения урока (нажмите, чтобы перейти)</div>
       <div id="transcriptList" class="transcript-list"></div>
@@ -480,11 +597,12 @@
           </ul>
         </div>
         <div class="hk-block">
-          <h3>Блок «Предложения и субтитры»</h3>
+          <h3>Блок «Предложения и слова»</h3>
           <ul>
             <li><kbd>Space</kbd> — пауза / воспроизведение</li>
             <li><kbd>←</kbd> / <kbd>→</kbd> — предыдущее / следующее предложение</li>
             <li><kbd>R</kbd> — повторить текущее предложение сначала</li>
+            <li>Клик по слову — перевод и оценка знания</li>
           </ul>
         </div>
         <div class="hk-block">
@@ -500,8 +618,9 @@
   </div>
 
   <script>
-    const VERSION = "Вер. 0.3";
+    const VERSION = "Вер. 0.4";
     const API_STORAGE_KEY = "yt_lesson_sub_api_url";
+    const WORDS_STORAGE_KEY = "yt_lesson_words_knowledge_v1";
 
     const DEMO_SENTENCES = [
       {
@@ -532,18 +651,33 @@
     let apiReady = false;
     let pendingVideoId = null;
     let pollTimer = null;
+    let selectedWordClean = null;
+
+    let wordKnowledge = {};
+    try {
+      wordKnowledge = JSON.parse(localStorage.getItem(WORDS_STORAGE_KEY) || "{}");
+    } catch (_) {
+      wordKnowledge = {};
+    }
+
+    function saveWordKnowledge() {
+      localStorage.setItem(WORDS_STORAGE_KEY, JSON.stringify(wordKnowledge));
+    }
 
     const urlInput = document.getElementById("urlInput");
     const startBtn = document.getElementById("startBtn");
     const statusMsg = document.getElementById("statusMsg");
     const subApiInput = document.getElementById("subApiInput");
     const saveApiBtn = document.getElementById("saveApiBtn");
-    const testApiBtn = document.getElementById("testApiBtn");
     const subEn = document.getElementById("subEn");
     const subRu = document.getElementById("subRu");
     const sentenceCounter = document.getElementById("sentenceCounter");
     const timeReadout = document.getElementById("timeReadout");
     const transcriptList = document.getElementById("transcriptList");
+
+    const wordCard = document.getElementById("wordCard");
+    const wordCardEn = document.getElementById("wordCardEn");
+    const wordCardRu = document.getElementById("wordCardRu");
 
     const pauseAtEndEl = document.getElementById("pauseAtEnd");
     const repeatSentenceEl = document.getElementById("repeatSentence");
@@ -551,38 +685,88 @@
     const segStartInput = document.getElementById("segStart");
     const segEndInput = document.getElementById("segEnd");
 
-    subApiInput.value = localStorage.getItem(API_STORAGE_KEY) || "";
+    subApiInput.value = localStorage.getItem(API_STORAGE_KEY) || "https://silent-dew-820c.nak82.workers.dev";
 
     saveApiBtn.addEventListener("click", () => {
       const cleanUrl = subApiInput.value.trim().replace(/\/+$/, "");
       subApiInput.value = cleanUrl;
       localStorage.setItem(API_STORAGE_KEY, cleanUrl);
       statusMsg.className = "status ok";
-      statusMsg.textContent = cleanUrl ? `URL Worker сохранён: ${cleanUrl}` : "URL Worker очищен (будет использоваться демо-режим).";
+      statusMsg.textContent = cleanUrl ? `URL Worker сохранён: ${cleanUrl}` : "URL Worker очищен.";
     });
 
-    testApiBtn.addEventListener("click", async () => {
-      const base = (subApiInput.value || "").trim().replace(/\/+$/, "");
-      if (!base) {
-        statusMsg.className = "status warn";
-        statusMsg.textContent = "Сначала вставьте URL вашего Cloudflare Worker.";
-        return;
-      }
-      statusMsg.className = "status";
-      statusMsg.textContent = "Проверяю связь с Worker…";
+    function normalizeWordKey(rawToken) {
+      return (rawToken || "").toLowerCase().replace(/^[^a-zA-Zа-яА-Я'-]+|[^a-zA-Zа-яА-Я'-]+$/g, "");
+    }
+
+    async function translateText(text, sl = "en", tl = "ru") {
+      if (!text || !text.trim()) return "";
       try {
-        const res = await fetch(`${base}?v=dQw4w9WgXcQ`);
+        const u = new URL("https://translate.googleapis.com/translate_a/single");
+        u.searchParams.set("client", "gtx");
+        u.searchParams.set("sl", sl);
+        u.searchParams.set("tl", tl);
+        u.searchParams.set("dt", "t");
+        u.searchParams.set("q", text.trim());
+        const res = await fetch(u.toString());
+        if (!res.ok) return "";
         const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || `HTTP ${res.status}`);
-        }
-        statusMsg.className = "status ok";
-        statusMsg.textContent = `Связь с Worker есть! Получено предложений: ${(data.sentences || []).length}.`;
-      } catch (err) {
-        statusMsg.className = "status warn";
-        statusMsg.textContent = `Ошибка связи с Worker: ${err.message}`;
+        if (!Array.isArray(data) || !Array.isArray(data[0])) return "";
+        return data[0].map((chunk) => (Array.isArray(chunk) ? chunk[0] : "")).join("").trim();
+      } catch (_) {
+        return "";
       }
+    }
+
+    function renderInteractiveSentence(enText) {
+      subEn.innerHTML = "";
+      const tokens = (enText || "").split(/(\s+)/);
+      tokens.forEach((tok) => {
+        if (/^\s+$/.test(tok)) {
+          subEn.appendChild(document.createTextNode(tok));
+          return;
+        }
+        const key = normalizeWordKey(tok);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = tok;
+        btn.className = "word-btn";
+        if (key && wordKnowledge[key]) {
+          btn.classList.add(`lvl-${wordKnowledge[key]}`);
+        }
+        if (key) {
+          btn.addEventListener("click", async () => {
+            if (ytPlayer && typeof ytPlayer.pauseVideo === "function") {
+              ytPlayer.pauseVideo();
+            }
+            selectedWordClean = key;
+            wordCardEn.textContent = tok;
+            wordCardRu.textContent = " — перевод…";
+            wordCard.classList.add("visible");
+            const tr = await translateText(key, "en", "ru");
+            wordCardRu.textContent = tr ? ` — ${tr}` : " — перевод не найден";
+          });
+        }
+        subEn.appendChild(btn);
+      });
+    }
+
+    function setWordLevel(level) {
+      if (!selectedWordClean) return;
+      wordKnowledge[selectedWordClean] = level;
+      saveWordKnowledge();
+      if (activeSentenceIndex >= 0 && sentences[activeSentenceIndex]) {
+        renderInteractiveSentence(sentences[activeSentenceIndex].en);
+      }
+    }
+
+    document.getElementById("closeWordCard").addEventListener("click", () => {
+      wordCard.classList.remove("visible");
+      selectedWordClean = null;
     });
+    document.getElementById("rateUnknown").addEventListener("click", () => setWordLevel("unknown"));
+    document.getElementById("rateLearning").addEventListener("click", () => setWordLevel("learning"));
+    document.getElementById("rateKnown").addEventListener("click", () => setWordLevel("known"));
 
     function extractYouTubeId(raw) {
       const s = (raw || "").trim();
@@ -612,7 +796,7 @@
     async function fetchLessonSentences(videoId) {
       const base = (subApiInput.value || "").trim().replace(/\/+$/, "");
       if (!base) {
-        return { sentences: [...DEMO_SENTENCES], source: "демо-набор (URL Worker не указан)" };
+        return { sentences: [...DEMO_SENTENCES], source: "демо-набор" };
       }
       const res = await fetch(`${base}?v=${encodeURIComponent(videoId)}`);
       const data = await res.json();
@@ -620,7 +804,7 @@
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       if (!Array.isArray(data.sentences) || data.sentences.length === 0) {
-        throw new Error("Worker вернул пустой список предложений");
+        throw new Error("Пустой список предложений");
       }
       return { sentences: data.sentences, source: `Worker (${data.lang || "en"})` };
     }
@@ -643,13 +827,19 @@
       });
     }
 
+    function showSentenceOnScreen(idx) {
+      const item = sentences[idx];
+      if (!item) return;
+      renderInteractiveSentence(item.en);
+      subRu.textContent = item.ru || "";
+      sentenceCounter.textContent = `Предложение: ${idx + 1} / ${sentences.length}`;
+    }
+
     function selectSentence(idx, shouldSeekAndPlay = false) {
       if (idx < 0 || idx >= sentences.length) return;
       activeSentenceIndex = idx;
       const item = sentences[idx];
-      subEn.textContent = item.en;
-      subRu.textContent = item.ru || "";
-      sentenceCounter.textContent = `Предложение: ${idx + 1} / ${sentences.length}`;
+      showSentenceOnScreen(idx);
 
       segStartInput.value = item.start.toFixed(1);
       segEndInput.value = Math.min(item.end, item.start + 1.5).toFixed(1);
@@ -680,7 +870,7 @@
       } catch (err) {
         sentences = [...DEMO_SENTENCES];
         statusMsg.className = "status warn";
-        statusMsg.textContent = `Не удалось получить субтитры (${err.message}). Показан демо-набор.`;
+        statusMsg.textContent = `Авто-субтитры с сервера не получены (${err.message}). Можно вставить текст ниже или пользоваться демо.`;
       }
 
       renderTranscriptList();
@@ -714,6 +904,52 @@
       startPolling();
     }
 
+    // Сборка предложений из сырого скопированного текста и перевод на русский
+    document.getElementById("buildFromTextBtn").addEventListener("click", async () => {
+      const rawTextInput = document.getElementById("rawTextInput");
+      const textBuildStatus = document.getElementById("textBuildStatus");
+      const cleaned = (rawTextInput.value || "").replace(/\s+/g, " ").trim();
+      if (!cleaned) {
+        textBuildStatus.textContent = "Вставьте текст перед сборкой.";
+        return;
+      }
+
+      const parts = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
+      let cursor = 0;
+      const built = [];
+
+      for (const p of parts) {
+        const sText = p.trim();
+        if (!sText) continue;
+        const wordsCount = sText.split(/\s+/).length;
+        const dur = Math.max(2.0, Number((wordsCount * 0.42).toFixed(1)));
+        built.push({
+          start: Number(cursor.toFixed(1)),
+          end: Number((cursor + dur).toFixed(1)),
+          en: sText,
+          ru: ""
+        });
+        cursor += dur;
+      }
+
+      sentences = built;
+      activeSentenceIndex = -1;
+      handledEndForIndex = -1;
+      renderTranscriptList();
+      textBuildStatus.textContent = `Собрано предложений: ${sentences.length}. Перевожу на русский…`;
+
+      for (let i = 0; i < sentences.length; i++) {
+        sentences[i].ru = await translateText(sentences[i].en, "en", "ru");
+        if (i % 4 === 0 || i === sentences.length - 1) {
+          textBuildStatus.textContent = `Переведено ${i + 1} из ${sentences.length} предложений…`;
+          renderTranscriptList();
+        }
+      }
+
+      textBuildStatus.textContent = `Готово! Предложений: ${sentences.length}.`;
+      selectSentence(0, false);
+    });
+
     function startPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(() => {
@@ -740,10 +976,7 @@
         if (foundIdx !== -1 && foundIdx !== activeSentenceIndex) {
           activeSentenceIndex = foundIdx;
           handledEndForIndex = -1;
-          const s = sentences[foundIdx];
-          subEn.textContent = s.en;
-          subRu.textContent = s.ru || "";
-          sentenceCounter.textContent = `Предложение: ${foundIdx + 1} / ${sentences.length}`;
+          showSentenceOnScreen(foundIdx);
           renderTranscriptList();
         }
 
