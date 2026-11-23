@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Тест YouTube плеера</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 860px;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 14px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #1e1e1e;
+      color: #fff;
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: #4ea1ff;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      background: #2b7de9;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1f68c7;
+    }
+    .error {
+      color: #ff6b6b;
+      margin-bottom: 14px;
+      min-height: 20px;
+      font-size: 14px;
+    }
+    .player-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+    }
+    .player-wrapper iframe,
+    .player-wrapper #player {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      font-size: 15px;
+      text-align: center;
+      padding: 16px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Запуск видео по ссылке с YouTube</h2>
+
+    <div class="input-group">
+      <input
+        id="ytUrlInput"
+        type="text"
+        placeholder="Вставьте ссылку на YouTube (например, https://youtu.be/... или https://www.youtube.com/watch?v=...)"
+      />
+      <button id="loadBtn" type="button">Запустить</button>
+    </div>
+
+    <div id="errorMsg" class="error"></div>
+
+    <div class="player-wrapper">
+      <div id="placeholder" class="placeholder">Здесь появится плеер после вставки ссылки</div>
+      <div id="player"></div>
+    </div>
+  </div>
+
+  <script>
+    const inputEl = document.getElementById("ytUrlInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const errorEl = document.getElementById("errorMsg");
+    const placeholderEl = document.getElementById("placeholder");
+
+    let ytPlayer = null;
+    let isApiReady = false;
+    let pendingVideoId = null;
+
+    // Извлекаем 11-символьный ID видео из разных форматов ссылок YouTube
+    function extractYouTubeId(urlStr) {
+      const trimmed = (urlStr || "").trim();
+      if (!trimmed) return null;
+
+      // Если пользователь вставил сразу 11-символьный ID
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+        return trimmed;
+      }
+
+      try {
+        const url = new URL(trimmed);
+        const host = url.hostname.replace(/^www\./, "").replace(/^m\./, "");
+
+        if (host === "youtu.be") {
+          const id = url.pathname.split("/").filter(Boolean)[0];
+          return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+        }
+
+        if (host === "youtube.com" || host === "youtube-nocookie.com") {
+          const vParam = url.searchParams.get("v");
+          if (vParam && /^[a-zA-Z0-9_-]{11}$/.test(vParam)) {
+            return vParam;
+          }
+
+          const parts = url.pathname.split("/").filter(Boolean);
+          // /embed/ID, /shorts/ID, /live/ID, /v/ID
+          if (parts.length >= 2 && ["embed", "shorts", "live", "v"].includes(parts[0])) {
+            return /^[a-zA-Z0-9_-]{11}$/.test(parts[1]) ? parts[1] : null;
+          }
+        }
+      } catch (_) {
+        return null;
+      }
+
+      return null;
+    }
+
+    // Загружаем YouTube IFrame API
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function () {
+      isApiReady = true;
+      if (pendingVideoId) {
+        createOrLoadVideo(pendingVideoId);
+        pendingVideoId = null;
+      }
+    };
+
+    function createOrLoadVideo(videoId) {
+      placeholderEl.style.display = "none";
+      errorEl.textContent = "";
+
+      if (!isApiReady) {
+        pendingVideoId = videoId;
+        return;
+      }
+
+      if (ytPlayer && typeof ytPlayer.loadVideoById === "function") {
+        ytPlayer.loadVideoById(videoId);
+      } else {
+        ytPlayer = new YT.Player("player", {
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            rel: 0
+          }
+        });
+      }
+    }
+
+    function handleLaunch() {
+      const videoId = extractYouTubeId(inputEl.value);
+      if (!videoId) {
+        errorEl.textContent = "Не удалось распознать корректную ссылку на YouTube.";
+        return;
+      }
+      createOrLoadVideo(videoId);
+    }
+
+    loadBtn.addEventListener("click", handleLaunch);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        handleLaunch();
+      }
+    });
+  </script>
+</body>
+</html>
