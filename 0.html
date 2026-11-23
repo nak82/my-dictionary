@@ -3,151 +3,455 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Тест YouTube плеера</title>
+  <title>Урок английского — YouTube тренажёр (Этап 1)</title>
   <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1f2430;
+      --text: #eef2f7;
+      --muted: #9aa4b2;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --border: #2a303d;
+      --success: #22c55e;
+      --warn: #f59e0b;
+    }
+
     * {
       box-sizing: border-box;
     }
+
     body {
       margin: 0;
-      padding: 24px;
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #f5f5f5;
+      padding: 20px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      gap: 16px;
     }
-    .container {
-      width: 100%;
-      max-width: 860px;
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
     }
-    .input-group {
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .url-row {
       display: flex;
       gap: 10px;
-      margin-bottom: 16px;
     }
-    input[type="text"] {
-      flex: 1;
-      padding: 12px 14px;
-      font-size: 15px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #1e1e1e;
-      color: #fff;
+
+    input[type="text"],
+    input[type="number"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
       outline: none;
     }
-    input[type="text"]:focus {
-      border-color: #4ea1ff;
+
+    input[type="text"] {
+      flex: 1;
     }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
     button {
-      padding: 12px 20px;
-      font-size: 15px;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      background: #2b7de9;
+      background: var(--accent);
       color: #fff;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1f68c7;
-    }
-    .error {
-      color: #ff6b6b;
-      margin-bottom: 14px;
-      min-height: 20px;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
       font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
     }
-    .player-wrapper {
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    button.secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background: #282f3d;
+    }
+
+    button.small {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status.warn {
+      color: var(--warn);
+    }
+
+    .player-box {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       background: #000;
       border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #2a2a2a;
+      border: 1px solid var(--border);
     }
-    .player-wrapper iframe,
-    .player-wrapper #player {
+
+    .player-box iframe,
+    .player-box #player {
       width: 100%;
       height: 100%;
       border: 0;
       display: block;
     }
-    .placeholder {
-      position: absolute;
-      inset: 0;
+
+    .subs-box {
       display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sub-meta {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      color: #888;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sub-en {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      min-height: 34px;
+    }
+
+    .sub-ru {
+      font-size: 16px;
+      color: #cbd5e1;
+      min-height: 24px;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ab-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ab-title {
       font-size: 15px;
-      text-align: center;
-      padding: 16px;
-      pointer-events: none;
+      font-weight: 600;
+    }
+
+    .ab-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .marker-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .marker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .marker-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .marker-controls input[type="number"] {
+      width: 90px;
+      padding: 6px 8px;
+    }
+
+    .ab-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .transcript-list {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sentence-item {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sentence-item:hover {
+      border-color: var(--border);
+    }
+
+    .sentence-item.active {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.14);
+    }
+
+    .sentence-item .ru-small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Запуск видео по ссылке с YouTube</h2>
-
-    <div class="input-group">
-      <input
-        id="ytUrlInput"
-        type="text"
-        placeholder="Вставьте ссылку на YouTube (например, https://youtu.be/... или https://www.youtube.com/watch?v=...)"
-      />
-      <button id="loadBtn" type="button">Запустить</button>
+  <div class="app">
+    <!-- 1. Ввод ссылки -->
+    <div class="card">
+      <h1>Английский видео-тренажёр (прототип плеера)</h1>
+      <div class="url-row">
+        <input
+          id="urlInput"
+          type="text"
+          placeholder="Вставьте ссылку на YouTube (например, https://youtu.be/dQw4w9WgXcQ)"
+        />
+        <button id="startBtn" type="button">Загрузить видео</button>
+      </div>
+      <div id="statusMsg" class="status">
+        Вставьте ссылку и нажмите «Загрузить видео». Сейчас используется встроенный демо-набор предложений для проверки логики.
+      </div>
     </div>
 
-    <div id="errorMsg" class="error"></div>
+    <!-- 2. Плеер -->
+    <div class="card">
+      <div class="player-box">
+        <div id="player"></div>
+      </div>
+    </div>
 
-    <div class="player-wrapper">
-      <div id="placeholder" class="placeholder">Здесь появится плеер после вставки ссылки</div>
-      <div id="player"></div>
+    <!-- 3. Двуязычные субтитры по предложениям и управление концом предложения -->
+    <div class="card subs-box">
+      <div class="sub-meta">
+        <span id="sentenceCounter">Предложение: —</span>
+        <span id="timeReadout">Время: 0.0s</span>
+      </div>
+      <div id="subEn" class="sub-en">Ожидание запуска видео…</div>
+      <div id="subRu" class="sub-ru"></div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border); width: 100%; margin: 4px 0;" />
+
+      <div class="controls-bar">
+        <div class="toggles">
+          <label class="toggle">
+            <input id="pauseAtEnd" type="checkbox" />
+            <span>Пауза в конце предложения</span>
+          </label>
+          <label class="toggle">
+            <input id="repeatSentence" type="checkbox" />
+            <span>Повторять предложение сначала</span>
+          </label>
+        </div>
+
+        <div class="nav-btns">
+          <button id="prevSentenceBtn" class="secondary small" type="button">← Пред. фраза</button>
+          <button id="repeatNowBtn" class="secondary small" type="button">Повторить фразу</button>
+          <button id="nextSentenceBtn" class="secondary small" type="button">След. фраза →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Точные засечки (A - B) -->
+    <div class="card ab-panel">
+      <div class="ab-title">Точные засечки фрагмента (для слова или связки слов, шаг 0.1 сек)</div>
+      <div class="ab-grid">
+        <div class="marker-card">
+          <div class="marker-header">
+            <span>Начало (A)</span>
+            <button id="setStartFromNow" class="secondary small" type="button">Взять текущее время</button>
+          </div>
+          <div class="marker-controls">
+            <button id="startMinus" class="secondary small" type="button">-0.1s</button>
+            <input id="segStart" type="number" step="0.1" min="0" value="0.0" />
+            <button id="startPlus" class="secondary small" type="button">+0.1s</button>
+          </div>
+        </div>
+
+        <div class="marker-card">
+          <div class="marker-header">
+            <span>Конец (B)</span>
+            <button id="setEndFromNow" class="secondary small" type="button">Взять текущее время</button>
+          </div>
+          <div class="marker-controls">
+            <button id="endMinus" class="secondary small" type="button">-0.1s</button>
+            <input id="segEnd" type="number" step="0.1" min="0" value="2.5" />
+            <button id="endPlus" class="secondary small" type="button">+0.1s</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ab-actions">
+        <button id="playSegBtn" type="button">▶ Прослушать фрагмент A–B</button>
+        <label class="toggle">
+          <input id="loopSeg" type="checkbox" />
+          <span>Зациклить фрагмент A–B</span>
+        </label>
+        <button id="stopSegBtn" class="secondary small" type="button">Стоп / выйти из A–B</button>
+      </div>
+    </div>
+
+    <!-- 5. Список предложений -->
+    <div class="card">
+      <div class="ab-title" style="margin-bottom: 10px;">Все предложения урока (нажмите, чтобы перейти)</div>
+      <div id="transcriptList" class="transcript-list"></div>
     </div>
   </div>
 
   <script>
-    const inputEl = document.getElementById("ytUrlInput");
-    const loadBtn = document.getElementById("loadBtn");
-    const errorEl = document.getElementById("errorMsg");
-    const placeholderEl = document.getElementById("placeholder");
-
-    let ytPlayer = null;
-    let isApiReady = false;
-    let pendingVideoId = null;
-
-    // Извлекаем 11-символьный ID видео из разных форматов ссылок YouTube
-    function extractYouTubeId(urlStr) {
-      const trimmed = (urlStr || "").trim();
-      if (!trimmed) return null;
-
-      // Если пользователь вставил сразу 11-символьный ID
-      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-        return trimmed;
+    // Демо-предложения (на следующих этапах будут подтягиваться автоматически по ссылке)
+    const DEMO_SENTENCES = [
+      {
+        start: 0.0,
+        end: 4.2,
+        en: "Whenever you're ready, we can walk through how this works.",
+        ru: "Когда будешь готов, мы можем разобрать, как это работает."
+      },
+      {
+        start: 4.2,
+        end: 9.0,
+        en: "The trick is to catch the exact stress in connected speech.",
+        ru: "Весь секрет в том, чтобы уловить точное ударение в беглой речи."
+      },
+      {
+        start: 9.0,
+        end: 14.5,
+        en: "Don't rush past unfamiliar phrases—replay just the tricky part.",
+        ru: "Не пролистывай незнакомые фразы — переслушай именно сложный кусок."
       }
+    ];
 
+    let sentences = [...DEMO_SENTENCES];
+    let activeSentenceIndex = -1;
+    let handledEndForIndex = -1;
+
+    // Режим воспроизведения точной засечки A-B
+    let segmentMode = false; // true = играет отрезок A-B
+    let ytPlayer = null;
+    let apiReady = false;
+    let pendingVideoId = null;
+    let pollTimer = null;
+
+    const urlInput = document.getElementById("urlInput");
+    const startBtn = document.getElementById("startBtn");
+    const statusMsg = document.getElementById("statusMsg");
+    const subEn = document.getElementById("subEn");
+    const subRu = document.getElementById("subRu");
+    const sentenceCounter = document.getElementById("sentenceCounter");
+    const timeReadout = document.getElementById("timeReadout");
+    const transcriptList = document.getElementById("transcriptList");
+
+    const pauseAtEndEl = document.getElementById("pauseAtEnd");
+    const repeatSentenceEl = document.getElementById("repeatSentence");
+    const loopSegEl = document.getElementById("loopSeg");
+
+    const segStartInput = document.getElementById("segStart");
+    const segEndInput = document.getElementById("segEnd");
+
+    function extractYouTubeId(raw) {
+      const s = (raw || "").trim();
+      if (!s) return null;
+      if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
       try {
-        const url = new URL(trimmed);
-        const host = url.hostname.replace(/^www\./, "").replace(/^m\./, "");
-
+        const u = new URL(s);
+        const host = u.hostname.replace(/^www\./, "").replace(/^m\./, "");
         if (host === "youtu.be") {
-          const id = url.pathname.split("/").filter(Boolean)[0];
+          const id = u.pathname.split("/").filter(Boolean)[0];
           return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
         }
-
         if (host === "youtube.com" || host === "youtube-nocookie.com") {
-          const vParam = url.searchParams.get("v");
-          if (vParam && /^[a-zA-Z0-9_-]{11}$/.test(vParam)) {
-            return vParam;
-          }
-
-          const parts = url.pathname.split("/").filter(Boolean);
-          // /embed/ID, /shorts/ID, /live/ID, /v/ID
+          const v = u.searchParams.get("v");
+          if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+          const parts = u.pathname.split("/").filter(Boolean);
           if (parts.length >= 2 && ["embed", "shorts", "live", "v"].includes(parts[0])) {
             return /^[a-zA-Z0-9_-]{11}$/.test(parts[1]) ? parts[1] : null;
           }
@@ -155,28 +459,60 @@
       } catch (_) {
         return null;
       }
-
       return null;
     }
 
-    // Загружаем YouTube IFrame API
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
+    function renderTranscriptList() {
+      transcriptList.innerHTML = "";
+      sentences.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "sentence-item" + (idx === activeSentenceIndex ? " active" : "");
+        div.innerHTML = `
+          <div><strong>[${item.start.toFixed(1)}s – ${item.end.toFixed(1)}s]</strong> ${item.en}</div>
+          <div class="ru-small">${item.ru}</div>
+        `;
+        div.addEventListener("click", () => {
+          segmentMode = false;
+          handledEndForIndex = -1;
+          selectSentence(idx, true);
+        });
+        transcriptList.appendChild(div);
+      });
+    }
 
-    window.onYouTubeIframeAPIReady = function () {
-      isApiReady = true;
-      if (pendingVideoId) {
-        createOrLoadVideo(pendingVideoId);
-        pendingVideoId = null;
+    function selectSentence(idx, shouldSeekAndPlay = false) {
+      if (idx < 0 || idx >= sentences.length) return;
+      activeSentenceIndex = idx;
+      const item = sentences[idx];
+      subEn.textContent = item.en;
+      subRu.textContent = item.ru;
+      sentenceCounter.textContent = `Предложение: ${idx + 1} / ${sentences.length}`;
+
+      // Подставляем границы текущего предложения в засечки A-B как стартовую точку
+      segStartInput.value = item.start.toFixed(1);
+      segEndInput.value = Math.min(item.end, item.start + 1.5).toFixed(1);
+
+      renderTranscriptList();
+
+      if (shouldSeekAndPlay && ytPlayer && typeof ytPlayer.seekTo === "function") {
+        handledEndForIndex = -1;
+        ytPlayer.seekTo(item.start, true);
+        if (typeof ytPlayer.playVideo === "function") {
+          ytPlayer.playVideo();
+        }
       }
-    };
+    }
 
-    function createOrLoadVideo(videoId) {
-      placeholderEl.style.display = "none";
-      errorEl.textContent = "";
+    function loadVideo(videoId) {
+      statusMsg.className = "status";
+      statusMsg.textContent = `Загружается видео ID: ${videoId}…`;
+      sentences = [...DEMO_SENTENCES];
+      activeSentenceIndex = -1;
+      handledEndForIndex = -1;
+      segmentMode = false;
+      renderTranscriptList();
 
-      if (!isApiReady) {
+      if (!apiReady) {
         pendingVideoId = videoId;
         return;
       }
@@ -185,30 +521,179 @@
         ytPlayer.loadVideoById(videoId);
       } else {
         ytPlayer = new YT.Player("player", {
-          videoId: videoId,
+          videoId,
           playerVars: {
             autoplay: 1,
-            rel: 0
+            rel: 0,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: (e) => {
+              const iframe = e.target.getIframe();
+              if (iframe) {
+                iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+              }
+              startPolling();
+            }
           }
         });
       }
+      startPolling();
     }
 
-    function handleLaunch() {
-      const videoId = extractYouTubeId(inputEl.value);
-      if (!videoId) {
-        errorEl.textContent = "Не удалось распознать корректную ссылку на YouTube.";
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        if (!ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
+        const t = ytPlayer.getCurrentTime();
+        if (typeof t !== "number" || Number.isNaN(t)) return;
+
+        timeReadout.textContent = `Время: ${t.toFixed(1)}s`;
+
+        // 1. Обработка точной засечки A-B
+        const startA = parseFloat(segStartInput.value) || 0;
+        const endB = parseFloat(segEndInput.value) || 0;
+        if (segmentMode && endB > startA && t >= endB) {
+          if (loopSegEl.checked) {
+            ytPlayer.seekTo(startA, true);
+            ytPlayer.playVideo();
+          } else {
+            segmentMode = false;
+            ytPlayer.pauseVideo();
+          }
+          return;
+        }
+
+        // 2. Определение активного предложения
+        const foundIdx = sentences.findIndex((s) => t >= s.start && t < s.end);
+        if (foundIdx !== -1 && foundIdx !== activeSentenceIndex) {
+          activeSentenceIndex = foundIdx;
+          handledEndForIndex = -1;
+          const s = sentences[foundIdx];
+          subEn.textContent = s.en;
+          subRu.textContent = s.ru;
+          sentenceCounter.textContent = `Предложение: ${foundIdx + 1} / ${sentences.length}`;
+          renderTranscriptList();
+        }
+
+        // 3. Поведение в конце активного предложения
+        if (activeSentenceIndex !== -1 && !segmentMode) {
+          const cur = sentences[activeSentenceIndex];
+          if (t >= cur.end - 0.08 && handledEndForIndex !== activeSentenceIndex) {
+            handledEndForIndex = activeSentenceIndex;
+
+            if (repeatSentenceEl.checked) {
+              ytPlayer.seekTo(cur.start, true);
+              ytPlayer.playVideo();
+              handledEndForIndex = -1;
+            } else if (pauseAtEndEl.checked) {
+              ytPlayer.pauseVideo();
+            }
+          }
+        }
+      }, 80);
+    }
+
+    // Загрузка YouTube IFrame API
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function () {
+      apiReady = true;
+      if (pendingVideoId) {
+        loadVideo(pendingVideoId);
+        pendingVideoId = null;
+      }
+    };
+
+    // События интерфейса
+    startBtn.addEventListener("click", () => {
+      const id = extractYouTubeId(urlInput.value);
+      if (!id) {
+        statusMsg.className = "status warn";
+        statusMsg.textContent = "Не удалось распознать ссылку YouTube. Проверьте формат ссылки.";
         return;
       }
-      createOrLoadVideo(videoId);
+      loadVideo(id);
+    });
+
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") startBtn.click();
+    });
+
+    prevSentenceBtn.addEventListener("click", () => {
+      segmentMode = false;
+      const target = activeSentenceIndex > 0 ? activeSentenceIndex - 1 : 0;
+      selectSentence(target, true);
+    });
+
+    nextSentenceBtn.addEventListener("click", () => {
+      segmentMode = false;
+      const target = activeSentenceIndex < sentences.length - 1 ? activeSentenceIndex + 1 : sentences.length - 1;
+      selectSentence(target, true);
+    });
+
+    repeatNowBtn.addEventListener("click", () => {
+      segmentMode = false;
+      const target = activeSentenceIndex >= 0 ? activeSentenceIndex : 0;
+      selectSentence(target, true);
+    });
+
+    // Корректировка засечек A и B на +-0.1s
+    function adjustInput(el, delta) {
+      const val = Math.max(0, (parseFloat(el.value) || 0) + delta);
+      el.value = val.toFixed(1);
     }
 
-    loadBtn.addEventListener("click", handleLaunch);
-    inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        handleLaunch();
+    document.getElementById("startMinus").addEventListener("click", () => adjustInput(segStartInput, -0.1));
+    document.getElementById("startPlus").addEventListener("click", () => adjustInput(segStartInput, 0.1));
+    document.getElementById("endMinus").addEventListener("click", () => adjustInput(segEndInput, -0.1));
+    document.getElementById("endPlus").addEventListener("click", () => adjustInput(segEndInput, 0.1));
+
+    document.getElementById("setStartFromNow").addEventListener("click", () => {
+      if (ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
+        segStartInput.value = Math.max(0, ytPlayer.getCurrentTime()).toFixed(1);
       }
     });
+
+    document.getElementById("setEndFromNow").addEventListener("click", () => {
+      if (ytPlayer && typeof ytPlayer.getCurrentTime === "function") {
+        segEndInput.value = Math.max(0, ytPlayer.getCurrentTime()).toFixed(1);
+      }
+    });
+
+    document.getElementById("playSegBtn").addEventListener("click", () => {
+      const a = parseFloat(segStartInput.value) || 0;
+      const b = parseFloat(segEndInput.value) || 0;
+      if (b <= a) {
+        statusMsg.className = "status warn";
+        statusMsg.textContent = "Конец (B) должен быть больше начала (A).";
+        return;
+      }
+      statusMsg.className = "status";
+      statusMsg.textContent = `Воспроизводится фрагмент A–B: ${a.toFixed(1)}s – ${b.toFixed(1)}s`;
+      segmentMode = true;
+      ytPlayer.seekTo(a, true);
+      ytPlayer.playVideo();
+    });
+
+    document.getElementById("stopSegBtn").addEventListener("click", () => {
+      segmentMode = false;
+      if (ytPlayer && typeof ytPlayer.pauseVideo === "function") {
+        ytPlayer.pauseVideo();
+      }
+    });
+
+    // Взаимоисключение галочек «Пауза» и «Повторять» (если нужно, можно легко сделать оба гибкими)
+    pauseAtEndEl.addEventListener("change", () => {
+      if (pauseAtEndEl.checked) repeatSentenceEl.checked = false;
+    });
+    repeatSentenceEl.addEventListener("change", () => {
+      if (repeatSentenceEl.checked) pauseAtEndEl.checked = false;
+    });
+
+    renderTranscriptList();
   </script>
 </body>
 </html>
